@@ -15,16 +15,16 @@ import (
 )
 
 var (
-	ErrorNoCoin  = errors.New("coin not available")
-	ErrorRpcConnection  = errors.New("unable to perform rpc call")
-	ErrorRpcDeserialize = errors.New("unable to deserialize rpc response")
+	ErrorNoCoin               = errors.New("coin not available")
+	ErrorRpcConnection        = errors.New("unable to perform rpc call")
+	ErrorRpcDeserialize       = errors.New("unable to deserialize rpc response")
 	ErrorNoAuthMethodProvided = errors.New("missing authorization token")
-	ErrorNoRpcUserProvided = errors.New("missing rpc username")
-	ErrorNoRpcPassProvided = errors.New("missing rpc password")
-	ErrorNoRpcPortProvided = errors.New("missing rpc port")
-	ErrorNoHostIPProvided = errors.New("missing host ip")
-	ErrorNoHostUserProvided = errors.New("missing host user")
-	ErrorNoHostPortProvided = errors.New("missing host port")
+	ErrorNoRpcUserProvided    = errors.New("missing rpc username")
+	ErrorNoRpcPassProvided    = errors.New("missing rpc password")
+	ErrorNoRpcPortProvided    = errors.New("missing rpc port")
+	ErrorNoHostIPProvided     = errors.New("missing host ip")
+	ErrorNoHostUserProvided   = errors.New("missing host user")
+	ErrorNoHostPortProvided   = errors.New("missing host port")
 )
 
 type Endpoint struct {

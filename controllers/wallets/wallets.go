@@ -38,7 +38,8 @@ func (wc *WalletController) GetWalletInfo(c *gin.Context) {
 			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
 		},
 	})
-	res, err := rpcClient.Call("getwalletinfo")
+	res, err := rpcClient.Call(coinConfig.RpcMethods.GetWalletInfo)
+	fmt.Println(res)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
 		return
@@ -80,7 +81,7 @@ func (wc *WalletController) GetInfo(c *gin.Context) {
 			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
 		},
 	})
-	chainRes, err := rpcClient.Call("getblockchaininfo")
+	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.GetBlockchainInfo)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
 		return
@@ -91,7 +92,7 @@ func (wc *WalletController) GetInfo(c *gin.Context) {
 		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	netRes, err := rpcClient.Call("getnetworkinfo")
+	netRes, err := rpcClient.Call(coinConfig.RpcMethods.GetNetworkInfo)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
 		return
@@ -139,7 +140,7 @@ func (wc *WalletController) GetAddress(c *gin.Context) {
 			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
 		},
 	})
-	res, err := rpcClient.Call("getnewaddress")
+	res, err := rpcClient.Call(coinConfig.RpcMethods.GetNewAddress)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
 		return
