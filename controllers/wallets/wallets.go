@@ -154,11 +154,13 @@ func (wc *WalletController) GetAddress(c *gin.Context) {
 }
 
 func (wc *WalletController) CheckConfigs(coin *coinfactory.Coin) error {
-	if coin.RpcUser == "" {
-		return config.ErrorNoRpcUserProvided
-	}
-	if coin.RpcPass == "" {
-		return config.ErrorNoRpcPassProvided
+	if coin.Tag != "ETH" {
+		if coin.RpcUser == "" {
+			return config.ErrorNoRpcUserProvided
+		}
+		if coin.RpcPass == "" {
+			return config.ErrorNoRpcPassProvided
+		}
 	}
 	if coin.RpcPort == "" {
 		return config.ErrorNoRpcPortProvided
