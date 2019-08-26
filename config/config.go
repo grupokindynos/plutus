@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/ssh"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"strconv"
@@ -108,7 +107,6 @@ func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTu
 			User: server.User,
 			Auth: []ssh.AuthMethod{auth},
 			HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-				// Always accept key.
 				return nil
 			},
 		},
@@ -120,12 +118,9 @@ func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTu
 	return sshTunnel
 }
 
-func PrivateKeyFile(file string) ssh.AuthMethod {
-	buffer, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil
-	}
-	key, err := ssh.ParsePrivateKey(buffer)
+func PrivateKey(pvKeyString string) ssh.AuthMethod {
+	pvBytes := []byte(pvKeyString)
+	key, err := ssh.ParsePrivateKey(pvBytes)
 	if err != nil {
 		return nil
 	}
