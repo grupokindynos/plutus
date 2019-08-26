@@ -21,6 +21,12 @@ func (wc *WalletController) GetWalletInfo(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
+	err = wc.CheckConfigs(coinConfig)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
@@ -54,6 +60,11 @@ func (wc *WalletController) GetWalletInfo(c *gin.Context) {
 func (wc *WalletController) GetInfo(c *gin.Context) {
 	coin := c.Param("coin")
 	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	err = wc.CheckConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -111,6 +122,11 @@ func (wc *WalletController) GetAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
+	err = wc.CheckConfigs(coinConfig)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
@@ -135,4 +151,30 @@ func (wc *WalletController) GetAddress(c *gin.Context) {
 	}
 	config.GlobalResponse(address, err, c)
 	return
+}
+
+func (wc *WalletController) CheckConfigs(coin *coinfactory.Coin) error {
+	if coin.RpcUser == "" {
+		return config.ErrorNoRpcUserProvided
+	}
+	if coin.RpcPass == "" {
+		return config.ErrorNoRpcPassProvided
+	}
+	if coin.RpcPort == "" {
+		return config.ErrorNoRpcPortProvided
+	}
+	if coin.Host == "" {
+		return config.ErrorNoHostIPProvided
+	}
+	if coin.Port == "" {
+		return config.ErrorNoHostPortProvided
+	}
+	if coin.User == "" {
+		return config.ErrorNoHostUserProvided
+	}
+	if coin.PrivKey == "" {
+		return config.ErrorNoAuthMethodProvided
+	}
+
+	return nil
 }
