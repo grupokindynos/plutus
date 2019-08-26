@@ -18,7 +18,7 @@ func (wc *WalletController) GetWalletInfo(c *gin.Context) {
 	coinConfig := coinfactory.GetCoin(coin)
 
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
-	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKeyFile(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
+	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
 		_ = tunnel.Start()
 	}()
@@ -51,7 +51,7 @@ func (wc *WalletController) GetInfo(c *gin.Context) {
 	coin := c.Param("coin")
 	coinConfig := coinfactory.GetCoin(coin)
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
-	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKeyFile(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
+	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
 		_ = tunnel.Start()
 	}()
@@ -100,7 +100,7 @@ func (wc *WalletController) GetAddress(c *gin.Context) {
 	coin := c.Param("coin")
 	coinConfig := coinfactory.GetCoin(coin)
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
-	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKeyFile(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
+	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
 		_ = tunnel.Start()
 	}()
