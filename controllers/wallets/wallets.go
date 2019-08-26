@@ -2,6 +2,7 @@ package wallets
 
 import (
 	"encoding/base64"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/plutus/config"
 	coinfactory "github.com/grupokindynos/plutus/models/coin-factory"
@@ -15,8 +16,11 @@ type WalletController struct{}
 
 func (wc *WalletController) GetWalletInfo(c *gin.Context) {
 	coin := c.Param("coin")
-	coinConfig := coinfactory.GetCoin(coin)
-
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
@@ -49,7 +53,11 @@ func (wc *WalletController) GetWalletInfo(c *gin.Context) {
 
 func (wc *WalletController) GetInfo(c *gin.Context) {
 	coin := c.Param("coin")
-	coinConfig := coinfactory.GetCoin(coin)
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
@@ -98,11 +106,16 @@ func (wc *WalletController) GetInfo(c *gin.Context) {
 
 func (wc *WalletController) GetAddress(c *gin.Context) {
 	coin := c.Param("coin")
-	coinConfig := coinfactory.GetCoin(coin)
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
-		_ = tunnel.Start()
+		err := tunnel.Start()
+		fmt.Println(err)
 	}()
 	time.Sleep(100 * time.Millisecond)
 	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{

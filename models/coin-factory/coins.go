@@ -1,6 +1,7 @@
 package coinfactory
 
 import (
+	"github.com/grupokindynos/plutus/config"
 	"os"
 	"strings"
 )
@@ -17,7 +18,11 @@ type Coin struct {
 }
 
 // GetCoin is the safe way to check if a coin exists and retrieve the coin data
-func GetCoin(tag string) *Coin {
+func GetCoin(tag string) (*Coin, error) {
+	host := os.Getenv(strings.ToUpper(tag) + "_IP")
+	if host == "" {
+		return nil, config.ErrorNoCoin
+	}
 	return &Coin{
 		Tag:     strings.ToUpper(tag),
 		RpcUser: os.Getenv(strings.ToUpper(tag) + "_RPC_USER"),
@@ -27,5 +32,5 @@ func GetCoin(tag string) *Coin {
 		Port:    os.Getenv(strings.ToUpper(tag) + "_SSH_PORT"),
 		User:    os.Getenv(strings.ToUpper(tag) + "_SSH_USER"),
 		PrivKey: os.Getenv(strings.ToUpper(tag) + "_SSH_PRIVKEY"),
-	}
+	}, nil
 }

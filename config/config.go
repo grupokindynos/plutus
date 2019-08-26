@@ -6,13 +6,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/ssh"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 )
 
 var (
+	ErrorNoCoin  = errors.New("coin not available")
 	ErrorRpcConnection  = errors.New("unable to perform rpc call")
 	ErrorRpcDeserialize = errors.New("unable to deserialize rpc response")
 )
@@ -119,7 +122,13 @@ func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTu
 }
 
 func PrivateKey(pvKeyString string) ssh.AuthMethod {
-	pvBytes := []byte(pvKeyString)
+	isLocalEnv := os.Getenv("LOCAL_SETUP")
+	var pvBytes []byte
+	if isLocalEnv == "true" {
+		pvBytes, _ = ioutil.ReadFile(pvKeyString)
+	} else {
+		pvBytes = []byte(pvKeyString)
+	}
 	key, err := ssh.ParsePrivateKey(pvBytes)
 	if err != nil {
 		return nil
