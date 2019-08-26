@@ -31,7 +31,11 @@ func GetApp() *gin.Engine {
 }
 
 func ApplyRoutes(r *gin.Engine) {
-	api := r.Group("/")
+	authUser := os.Getenv("AUTH_USERNAME")
+	authPassword := os.Getenv("AUTH_PASSWORD")
+	api := r.Group("/", gin.BasicAuth(gin.Accounts{
+		authUser: authPassword,
+	}))
 	{
 		walletsCtrl := wallets.WalletController{}
 		api.GET(":coin/info", walletsCtrl.GetInfo)
