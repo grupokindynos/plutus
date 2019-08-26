@@ -1,19 +1,19 @@
 package main
 
 import (
-	"github.com/eabz/cache/persistence"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/grupokindynos/plutus/controllers/wallets"
 	_ "github.com/heroku/x/hmetrics/onload"
 	"github.com/joho/godotenv"
 	"net/http"
 	"os"
-	"time"
 )
 
 func init() {
 	_ = godotenv.Load()
 }
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -31,9 +31,12 @@ func GetApp() *gin.Engine {
 }
 
 func ApplyRoutes(r *gin.Engine) {
-	_ = r.Group("/")
+	api := r.Group("/")
 	{
-		_ = persistence.NewInMemoryStore(time.Second)
+		walletsCtrl := wallets.WalletController{}
+		api.GET(":coin/info", walletsCtrl.GetInfo)
+		api.GET(":coin/balance", walletsCtrl.GetWalletInfo)
+		api.GET(":coin/address", walletsCtrl.GetAddress)
 	}
 	r.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not Found")
