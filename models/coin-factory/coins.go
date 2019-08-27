@@ -25,13 +25,15 @@ type Coin struct {
 	RpcMethods RPCMethods
 }
 
+type Coins []Coin
+
 func GetRPCMethods(coin *Coin) RPCMethods {
 	if coin.Tag == "ETH" {
 		methods := RPCMethods{
 			GetWalletInfo:     "",
 			GetBlockchainInfo: "",
 			GetNetworkInfo:    "",
-			GetNewAddress:     "",
+			GetNewAddress:     "personal_newAccount",
 		}
 		return methods
 	} else {

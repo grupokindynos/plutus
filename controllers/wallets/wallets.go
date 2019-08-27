@@ -140,7 +140,7 @@ func (wc *WalletController) GetAddress(c *gin.Context) {
 			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
 		},
 	})
-	res, err := rpcClient.Call(coinConfig.RpcMethods.GetNewAddress)
+	res, err := rpcClient.Call(coinConfig.RpcMethods.GetNewAddress, jsonrpc.Params(""))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
 		return
