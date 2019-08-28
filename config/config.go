@@ -78,7 +78,6 @@ func (tunnel *SSHTunnel) Start() error {
 		if err != nil {
 			return err
 		}
-
 		tunnel.logf("accepted connection")
 		go tunnel.forward(conn)
 	}

@@ -30,7 +30,10 @@ func (wc *WalletController) GetWalletInfo(c *gin.Context) {
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
-		_ = tunnel.Start()
+		err := tunnel.Start()
+		if err != nil {
+			fmt.Println(err)
+		}
 	}()
 	time.Sleep(100 * time.Millisecond)
 	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
@@ -39,7 +42,6 @@ func (wc *WalletController) GetWalletInfo(c *gin.Context) {
 		},
 	})
 	res, err := rpcClient.Call(coinConfig.RpcMethods.GetWalletInfo)
-	fmt.Println(res)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
 		return
