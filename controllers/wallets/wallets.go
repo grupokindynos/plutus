@@ -33,6 +33,7 @@ func (w *WalletController) GetWalletInfo(c *gin.Context) {
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
+		// TODO handle tunnel error
 		err := tunnel.Start()
 		if err != nil {
 			fmt.Println(err)
@@ -78,7 +79,11 @@ func (w *WalletController) GetInfo(c *gin.Context) {
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
-		_ = tunnel.Start()
+		// TODO handle tunnel error
+		err := tunnel.Start()
+		if err != nil {
+			fmt.Println(err)
+		}
 	}()
 	time.Sleep(100 * time.Millisecond)
 	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
@@ -136,8 +141,11 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
+		// TODO handle tunnel error
 		err := tunnel.Start()
-		fmt.Println(err)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}()
 	time.Sleep(100 * time.Millisecond)
 	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
@@ -174,7 +182,11 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
-		_ = tunnel.Start()
+		// TODO handle tunnel error
+		err := tunnel.Start()
+		if err != nil {
+			fmt.Println(err)
+		}
 	}()
 	time.Sleep(100 * time.Millisecond)
 	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
@@ -306,7 +318,11 @@ func (w *WalletController) Send(coin *coinfactory.Coin, address string, amount s
 	hostStr := coin.User + "@" + coin.Host + ":" + coin.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coin.PrivKey), "localhost:"+coin.RpcPort)
 	go func() {
-		_ = tunnel.Start()
+		// TODO handle tunnel error
+		err := tunnel.Start()
+		if err != nil {
+			fmt.Println(err)
+		}
 	}()
 	time.Sleep(100 * time.Millisecond)
 	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
