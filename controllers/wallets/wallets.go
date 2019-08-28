@@ -2,26 +2,29 @@ package wallets
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/plutus/config"
+	"github.com/grupokindynos/plutus/models/blockbook"
 	coinfactory "github.com/grupokindynos/plutus/models/coin-factory"
 	"github.com/grupokindynos/plutus/models/responses"
 	"github.com/grupokindynos/plutus/models/rpc"
 	"github.com/ybbus/jsonrpc"
+	"io/ioutil"
 	"time"
 )
 
 type WalletController struct{}
 
-func (wc *WalletController) GetWalletInfo(c *gin.Context) {
+func (w *WalletController) GetWalletInfo(c *gin.Context) {
 	coin := c.Param("coin")
 	coinConfig, err := coinfactory.GetCoin(coin)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = wc.CheckConfigs(coinConfig)
+	err = w.CheckConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -60,14 +63,14 @@ func (wc *WalletController) GetWalletInfo(c *gin.Context) {
 	return
 }
 
-func (wc *WalletController) GetInfo(c *gin.Context) {
+func (w *WalletController) GetInfo(c *gin.Context) {
 	coin := c.Param("coin")
 	coinConfig, err := coinfactory.GetCoin(coin)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = wc.CheckConfigs(coinConfig)
+	err = w.CheckConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -118,14 +121,14 @@ func (wc *WalletController) GetInfo(c *gin.Context) {
 	return
 }
 
-func (wc *WalletController) GetAddress(c *gin.Context) {
+func (w *WalletController) GetAddress(c *gin.Context) {
 	coin := c.Param("coin")
 	coinConfig, err := coinfactory.GetCoin(coin)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = wc.CheckConfigs(coinConfig)
+	err = w.CheckConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -156,7 +159,169 @@ func (wc *WalletController) GetAddress(c *gin.Context) {
 	return
 }
 
-func (wc *WalletController) CheckConfigs(coin *coinfactory.Coin) error {
+func (w *WalletController) GetNodeStatus(c *gin.Context) {
+	coin := c.Param("coin")
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	err = w.CheckConfigs(coinConfig)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
+	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
+	go func() {
+		_ = tunnel.Start()
+	}()
+	time.Sleep(100 * time.Millisecond)
+	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
+		CustomHeaders: map[string]string{
+			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
+		},
+	})
+	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.GetBlockchainInfo)
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
+		return
+	}
+	var nodeStatus rpc.GetBlockchainInfo
+	err = chainRes.GetObject(&nodeStatus)
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
+		return
+	}
+	externalRes, err := config.HttpClient.Get("https://" + coinConfig.ExternalSource + "/api")
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorExternalStatusError, c)
+		return
+	}
+	defer func() {
+		_ = externalRes.Body.Close()
+	}()
+	contents, _ := ioutil.ReadAll(externalRes.Body)
+	var externalStatus blockbook.Status
+	err = json.Unmarshal(contents, &externalStatus)
+	isSynced := false
+	if nodeStatus.Blocks == externalStatus.Backend.Blocks && nodeStatus.Headers == externalStatus.Backend.Headers {
+		isSynced = true
+	}
+	response := responses.Status{
+		NodeBlocks:      nodeStatus.Blocks,
+		NodeHeaders:     nodeStatus.Headers,
+		ExternalBlocks:  externalStatus.Backend.Blocks,
+		ExternalHeaders: externalStatus.Backend.Headers,
+		Synced:          isSynced,
+	}
+	config.GlobalResponse(response, nil, c)
+	return
+}
+
+func (w *WalletController) SendToAddress(c *gin.Context) {
+	coin := c.Param("coin")
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	err = w.CheckConfigs(coinConfig)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	address := c.Param("address")
+	if address == "" {
+		config.GlobalResponse(nil, config.ErrorNoAddressSpecified, c)
+		return
+	}
+	amount, ok := c.GetQuery("amount")
+	if !ok {
+		config.GlobalResponse(nil, config.ErrorNoAmountSpecified, c)
+		return
+	}
+	txid, err := w.Send(coinConfig, address, amount)
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
+		return
+	}
+	config.GlobalResponse(txid, nil, c)
+	return
+}
+
+func (w *WalletController) SendToColdStorage(c *gin.Context) {
+	coin := c.Param("coin")
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	err = w.CheckConfigs(coinConfig)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	amount, ok := c.GetQuery("amount")
+	if !ok {
+		config.GlobalResponse(nil, config.ErrorNoAmountSpecified, c)
+		return
+	}
+	txid, err := w.Send(coinConfig, coinConfig.ColdAddress, amount)
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
+		return
+	}
+	config.GlobalResponse(txid, nil, c)
+	return
+}
+
+func (w *WalletController) SendToExchange(c *gin.Context) {
+	coin := c.Param("coin")
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	err = w.CheckConfigs(coinConfig)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	amount, ok := c.GetQuery("amount")
+	if !ok {
+		config.GlobalResponse(nil, config.ErrorNoAmountSpecified, c)
+		return
+	}
+	txid, err := w.Send(coinConfig, coinConfig.ExchangeAddress, amount)
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
+		return
+	}
+	config.GlobalResponse(txid, nil, c)
+	return
+}
+
+func (w *WalletController) Send(coin *coinfactory.Coin, address string, amount string) (string, error) {
+	hostStr := coin.User + "@" + coin.Host + ":" + coin.Port
+	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coin.PrivKey), "localhost:"+coin.RpcPort)
+	go func() {
+		_ = tunnel.Start()
+	}()
+	time.Sleep(100 * time.Millisecond)
+	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
+		CustomHeaders: map[string]string{
+			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coin.RpcUser+":"+coin.RpcPass)),
+		},
+	})
+	chainRes, err := rpcClient.Call(coin.RpcMethods.SendToAddress, jsonrpc.Params(address, amount))
+	if err != nil {
+		return "", err
+	}
+	return chainRes.GetString()
+}
+
+func (w *WalletController) CheckConfigs(coin *coinfactory.Coin) error {
 	if coin.Tag != "ETH" {
 		if coin.RpcUser == "" {
 			return config.ErrorNoRpcUserProvided
@@ -179,6 +344,12 @@ func (wc *WalletController) CheckConfigs(coin *coinfactory.Coin) error {
 	}
 	if coin.PrivKey == "" {
 		return config.ErrorNoAuthMethodProvided
+	}
+	if coin.ExchangeAddress == "" {
+		return config.ErrorNoExchangeAddress
+	}
+	if coin.ColdAddress == "" {
+		return config.ErrorNoColdAddress
 	}
 
 	return nil

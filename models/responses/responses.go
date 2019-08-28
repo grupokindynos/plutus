@@ -14,3 +14,11 @@ type Info struct {
 	Subversion  string `json:"subversion"`
 	Connections int    `json:"connections"`
 }
+
+type Status struct {
+	NodeBlocks      int  `json:"node_blocks"`
+	NodeHeaders     int  `json:"node_headers"`
+	ExternalBlocks  int  `json:"external_blocks"`
+	ExternalHeaders int  `json:"external_headers"`
+	Synced          bool `json:"synced"`
+}

@@ -9,9 +9,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -25,6 +27,16 @@ var (
 	ErrorNoHostIPProvided     = errors.New("missing host ip")
 	ErrorNoHostUserProvided   = errors.New("missing host user")
 	ErrorNoHostPortProvided   = errors.New("missing host port")
+	ErrorExternalStatusError  = errors.New("unable to get external source status")
+	ErrorNoAmountSpecified    = errors.New("missing amount specification")
+	ErrorNoAddressSpecified   = errors.New("missing address specification")
+	ErrorNoColdAddress        = errors.New("missing cold address to send")
+	ErrorNoExchangeAddress    = errors.New("missing exchange address to send")
+	ErrorUnableToSend         = errors.New("unable to send transaction")
+
+	HttpClient = &http.Client{
+		Timeout: time.Second * 10,
+	}
 )
 
 type Endpoint struct {

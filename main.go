@@ -38,9 +38,14 @@ func ApplyRoutes(r *gin.Engine) {
 	}))
 	{
 		walletsCtrl := wallets.WalletController{}
+		api.GET(":coin/status", walletsCtrl.GetNodeStatus)
 		api.GET(":coin/info", walletsCtrl.GetInfo)
 		api.GET(":coin/balance", walletsCtrl.GetWalletInfo)
 		api.GET(":coin/address", walletsCtrl.GetAddress)
+		api.GET(":coin/send/address/:address", walletsCtrl.SendToAddress)
+		api.GET(":coin/send/cold", walletsCtrl.SendToColdStorage)
+		api.GET(":coin/send/exchange", walletsCtrl.SendToExchange)
+
 	}
 	r.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not Found")
