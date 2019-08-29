@@ -1,12 +1,14 @@
 package config
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/ssh"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -140,14 +142,12 @@ func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTu
 }
 
 func PrivateKey(pvKeyString string) ssh.AuthMethod {
-	isLocalEnv := os.Getenv("LOCAL_SETUP")
-	var pvBytes []byte
-	if isLocalEnv == "true" {
-		pvBytes, _ = ioutil.ReadFile(pvKeyString)
-	} else {
-		pvBytes = []byte(pvKeyString)
+	encryptionPass := []byte(os.Getenv("KEY_PASSWORD"))
+	decrypted, err := decrypt(encryptionPass, pvKeyString)
+	if err != nil {
+		return nil
 	}
-	key, err := ssh.ParsePrivateKey(pvBytes)
+	key, err := ssh.ParsePrivateKey([]byte(decrypted))
 	if err != nil {
 		return nil
 	}
@@ -163,4 +163,27 @@ func GlobalResponse(result interface{}, err error, c *gin.Context) *gin.Context 
 		c.JSON(200, gin.H{"data": result, "status": 1})
 	}
 	return c
+}
+
+
+
+func decrypt(key []byte, securemess string) (decodedmess string, err error) {
+	cipherText, err := base64.StdEncoding.DecodeString(securemess)
+	if err != nil {
+		return
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return
+	}
+	if len(cipherText) < aes.BlockSize {
+		err = errors.New("ciphertext block size is too short")
+		return
+	}
+	iv := cipherText[:aes.BlockSize]
+	cipherText = cipherText[aes.BlockSize:]
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(cipherText, cipherText)
+	decodedmess = string(cipherText)
+	return
 }
