@@ -1,4 +1,4 @@
-package wallets
+package controllers
 
 import (
 	"encoding/base64"
