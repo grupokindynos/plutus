@@ -165,8 +165,6 @@ func GlobalResponse(result interface{}, err error, c *gin.Context) *gin.Context 
 	return c
 }
 
-
-
 func decrypt(key []byte, securemess string) (decodedmess string, err error) {
 	cipherText, err := base64.StdEncoding.DecodeString(securemess)
 	if err != nil {
