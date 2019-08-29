@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/grupokindynos/plutus/controllers/wallets"
+	"github.com/grupokindynos/plutus/controllers"
 	_ "github.com/heroku/x/hmetrics/onload"
 	"github.com/joho/godotenv"
 	"net/http"
@@ -37,7 +37,7 @@ func ApplyRoutes(r *gin.Engine) {
 		authUser: authPassword,
 	}))
 	{
-		walletsCtrl := wallets.WalletController{}
+		walletsCtrl := controllers.WalletController{}
 		api.GET("/status/:coin", walletsCtrl.GetNodeStatus)
 		api.GET("/info/:coin", walletsCtrl.GetInfo)
 		api.GET("/balance/:coin", walletsCtrl.GetWalletInfo)
