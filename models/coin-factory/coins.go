@@ -116,6 +116,28 @@ var mnpcoin = Coin{
 		SendToAddress:     "sendtoaddress",
 	},
 }
+var snowgem = Coin{
+	Tag:            "XSG",
+	ExternalSource: "",
+	RpcMethods: RPCMethods{
+		GetWalletInfo:     "getwalletinfo",
+		GetBlockchainInfo: "getblockchaininfo",
+		GetNetworkInfo:    "getnetworkinfo",
+		GetNewAddress:     "getnewaddress",
+		SendToAddress:     "sendtoaddress",
+	},
+}
+var ethereum = Coin{
+	Tag:            "ETH",
+	ExternalSource: "",
+	RpcMethods: RPCMethods{
+		GetWalletInfo:     "",
+		GetBlockchainInfo: "",
+		GetNetworkInfo:    "",
+		GetNewAddress:     "",
+		SendToAddress:     "",
+	},
+}
 
 type RPCMethods struct {
 	GetWalletInfo     string
@@ -151,6 +173,8 @@ var Coins = map[string]*Coin{
 	"COLX":  &colossus,
 	"ONION": &deeponion,
 	"MNP":   &mnpcoin,
+	"XSG":   &snowgem,
+	"ETH":   &ethereum,
 }
 
 // GetCoin is the safe way to check if a coin exists and retrieve the coin data
