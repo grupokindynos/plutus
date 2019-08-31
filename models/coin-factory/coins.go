@@ -10,121 +10,154 @@ var polis = Coin{
 	Tag:            "POLIS",
 	ExternalSource: "blockbook.polispay.org",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "validateaddress",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: true,
 	},
 }
 var digibyte = Coin{
 	Tag:            "DGB",
 	ExternalSource: "dgb2.trezor.io",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "getaddressinfo",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: "1",
 	},
 }
 var zcoin = Coin{
 	Tag:            "XZC",
 	ExternalSource: "xzc.polispay.com",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "validateaddress",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: true,
 	},
 }
 var litecoin = Coin{
 	Tag:            "LTC",
 	ExternalSource: "ltc2.trezor.io",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "getaddressinfo",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: "1",
 	},
 }
 var bitcoin = Coin{
 	Tag:            "BTC",
 	ExternalSource: "btc2.trezor.io",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "getaddressinfo",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: "1",
 	},
 }
 var dash = Coin{
 	Tag:            "DASH",
 	ExternalSource: "dash2.trezor.io",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "validateaddress",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: true,
 	},
 }
 var groestlcoin = Coin{
 	Tag:            "GRS",
 	ExternalSource: "grs.polispay.com",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "getaddressinfo",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: "1",
 	},
 }
 var colossus = Coin{
 	Tag:            "COLX",
 	ExternalSource: "",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "validateaddress",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: true,
 	},
 }
 var deeponion = Coin{
 	Tag:            "ONION",
 	ExternalSource: "",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "validateaddress",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: true,
 	},
 }
 var mnpcoin = Coin{
 	Tag:            "MNP",
 	ExternalSource: "",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "validateaddress",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: true,
 	},
 }
 var snowgem = Coin{
 	Tag:            "XSG",
 	ExternalSource: "",
 	RpcMethods: RPCMethods{
-		GetWalletInfo:     "getwalletinfo",
-		GetBlockchainInfo: "getblockchaininfo",
-		GetNetworkInfo:    "getnetworkinfo",
-		GetNewAddress:     "getnewaddress",
-		SendToAddress:     "sendtoaddress",
+		GetWalletInfo:              "getwalletinfo",
+		GetBlockchainInfo:          "getblockchaininfo",
+		GetNetworkInfo:             "getnetworkinfo",
+		GetNewAddress:              "getnewaddress",
+		SendToAddress:              "sendtoaddress",
+		ValidateAddress:            "validateaddress",
+		GetRawTransaction:          "getrawtransaction",
+		GetRawTransactionVerbosity: true,
 	},
 }
 var ethereum = Coin{
@@ -140,11 +173,14 @@ var ethereum = Coin{
 }
 
 type RPCMethods struct {
-	GetWalletInfo     string
-	GetBlockchainInfo string
-	GetNetworkInfo    string
-	GetNewAddress     string
-	SendToAddress     string
+	GetWalletInfo              string
+	GetBlockchainInfo          string
+	GetNetworkInfo             string
+	GetNewAddress              string
+	SendToAddress              string
+	ValidateAddress            string
+	GetRawTransaction          string
+	GetRawTransactionVerbosity interface{}
 }
 
 type Coin struct {

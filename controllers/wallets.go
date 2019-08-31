@@ -29,22 +29,7 @@ func (w *WalletController) GetWalletInfo(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-
-	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
-	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
-	go func() {
-		// TODO handle tunnel error
-		err := tunnel.Start()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
-	time.Sleep(100 * time.Millisecond)
-	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
-		CustomHeaders: map[string]string{
-			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
-		},
-	})
+	rpcClient := w.RPCClient(coinConfig)
 	res, err := rpcClient.Call(coinConfig.RpcMethods.GetWalletInfo)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
@@ -76,21 +61,7 @@ func (w *WalletController) GetInfo(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
-	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
-	go func() {
-		// TODO handle tunnel error
-		err := tunnel.Start()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
-	time.Sleep(100 * time.Millisecond)
-	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
-		CustomHeaders: map[string]string{
-			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
-		},
-	})
+	rpcClient := w.RPCClient(coinConfig)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.GetBlockchainInfo)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
@@ -138,21 +109,7 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
-	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
-	go func() {
-		// TODO handle tunnel error
-		err := tunnel.Start()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
-	time.Sleep(100 * time.Millisecond)
-	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
-		CustomHeaders: map[string]string{
-			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
-		},
-	})
+	rpcClient := w.RPCClient(coinConfig)
 	res, err := rpcClient.Call(coinConfig.RpcMethods.GetNewAddress, jsonrpc.Params(""))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
@@ -179,21 +136,7 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
-	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
-	go func() {
-		// TODO handle tunnel error
-		err := tunnel.Start()
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
-	time.Sleep(100 * time.Millisecond)
-	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
-		CustomHeaders: map[string]string{
-			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
-		},
-	})
+	rpcClient := w.RPCClient(coinConfig)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.GetBlockchainInfo)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
@@ -314,9 +257,64 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 	return
 }
 
-func (w *WalletController) Send(coin *coinfactory.Coin, address string, amount string) (string, error) {
-	hostStr := coin.User + "@" + coin.Host + ":" + coin.Port
-	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coin.PrivKey), "localhost:"+coin.RpcPort)
+func (w *WalletController) ValidateAddress(c *gin.Context) {
+	coin := c.Param("coin")
+	address := c.Param("address")
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	err = w.CheckConfigs(coinConfig)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	rpcClient := w.RPCClient(coinConfig)
+	res, err := rpcClient.Call(coinConfig.RpcMethods.ValidateAddress, jsonrpc.Params(address))
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorUnableToValidateAddress, c)
+		return
+	}
+	var AddressValidation rpc.ValidateAddress
+	err = res.GetObject(&AddressValidation)
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
+		return
+	}
+	response := responses.Address{
+		Valid: AddressValidation.Ismine,
+	}
+	config.GlobalResponse(response, nil, c)
+	return
+}
+
+func (w *WalletController) GetTx(c *gin.Context) {
+	coin := c.Param("coin")
+	txid := c.Param("txid")
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	err = w.CheckConfigs(coinConfig)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	rpcClient := w.RPCClient(coinConfig)
+	res, err := rpcClient.Call(coinConfig.RpcMethods.GetRawTransaction, jsonrpc.Params(txid, coinConfig.RpcMethods.GetRawTransactionVerbosity))
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorUnableToValidateAddress, c)
+		return
+	}
+	config.GlobalResponse(res.Result, nil, c)
+	return
+}
+
+func (w *WalletController) RPCClient(coinConfig *coinfactory.Coin) jsonrpc.RPCClient {
+	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
+	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
 		// TODO handle tunnel error
 		err := tunnel.Start()
@@ -327,10 +325,15 @@ func (w *WalletController) Send(coin *coinfactory.Coin, address string, amount s
 	time.Sleep(100 * time.Millisecond)
 	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
 		CustomHeaders: map[string]string{
-			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coin.RpcUser+":"+coin.RpcPass)),
+			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
 		},
 	})
-	chainRes, err := rpcClient.Call(coin.RpcMethods.SendToAddress, jsonrpc.Params(address, amount))
+	return rpcClient
+}
+
+func (w *WalletController) Send(coinConfig *coinfactory.Coin, address string, amount string) (string, error) {
+	rpcClient := w.RPCClient(coinConfig)
+	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.SendToAddress, jsonrpc.Params(address, amount))
 	if err != nil {
 		return "", err
 	}

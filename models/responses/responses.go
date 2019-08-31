@@ -22,3 +22,7 @@ type Status struct {
 	ExternalHeaders int  `json:"external_headers"`
 	Synced          bool `json:"synced"`
 }
+
+type Address struct {
+	Valid bool `json:"valid"`
+}

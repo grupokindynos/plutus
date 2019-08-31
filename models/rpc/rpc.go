@@ -76,3 +76,36 @@ type GetNetworkInfo struct {
 	} `json:"localaddresses"`
 	Warnings string `json:"warnings"`
 }
+
+type ValidateAddress struct {
+	Address      string `json:"address"`
+	ScriptPubKey string `json:"scriptPubKey"`
+	Ismine       bool   `json:"ismine"`
+	Solvable     bool   `json:"solvable"`
+	Desc         string `json:"desc"`
+	Iswatchonly  bool   `json:"iswatchonly"`
+	Isscript     bool   `json:"isscript"`
+	Iswitness    bool   `json:"iswitness"`
+	Script       string `json:"script"`
+	Hex          string `json:"hex"`
+	Pubkey       string `json:"pubkey"`
+	Embedded     struct {
+		Isscript       bool   `json:"isscript"`
+		Iswitness      bool   `json:"iswitness"`
+		WitnessVersion int    `json:"witness_version"`
+		WitnessProgram string `json:"witness_program"`
+		Pubkey         string `json:"pubkey"`
+		Address        string `json:"address"`
+		ScriptPubKey   string `json:"scriptPubKey"`
+	} `json:"embedded"`
+	Label               string `json:"label"`
+	Ischange            bool   `json:"ischange"`
+	Timestamp           int    `json:"timestamp"`
+	Hdkeypath           string `json:"hdkeypath"`
+	Hdseedid            string `json:"hdseedid"`
+	Hdmasterfingerprint string `json:"hdmasterfingerprint"`
+	Labels              []struct {
+		Name    string `json:"name"`
+		Purpose string `json:"purpose"`
+	} `json:"labels"`
+}
