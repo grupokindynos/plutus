@@ -17,3 +17,4 @@
 # Production
 .env
 plutus
+coverage.txt
