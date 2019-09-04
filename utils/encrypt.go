@@ -9,7 +9,7 @@ import (
 	"log"
 )
 
-func init() {
+func main() {
 	file := flag.String("file", "", "private key location string")
 	password := flag.String("key", "", "encryption key (max length 32 bytes)")
 	flag.Parse()
