@@ -20,7 +20,7 @@ To deploy to docker, simply pull the image
 ```
 docker pull kindynos/plutus:latest
 ```
-Create a new `.env` file with all the necesarry enviroment variables defined on `app.json`
+Create a new `.env` file with all the necessary environment variables defined on `app.json`
 
 Run the docker image
 ```
