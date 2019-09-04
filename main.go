@@ -5,14 +5,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/plutus/controllers"
 	_ "github.com/heroku/x/hmetrics/onload"
-	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload"
 	"net/http"
 	"os"
 )
-
-func init() {
-	_ = godotenv.Load()
-}
 
 func main() {
 	port := os.Getenv("PORT")

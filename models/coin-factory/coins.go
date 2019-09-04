@@ -2,6 +2,7 @@ package coinfactory
 
 import (
 	"github.com/grupokindynos/plutus/config"
+	_ "github.com/joho/godotenv/autoload"
 	"os"
 	"strings"
 )
