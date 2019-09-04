@@ -39,11 +39,10 @@ func ApplyRoutes(r *gin.Engine) {
 		api.GET("/balance/:coin", walletsCtrl.GetWalletInfo)
 		api.GET("/tx/:coin/:txid", walletsCtrl.GetTx)
 		api.GET("/address/:coin", walletsCtrl.GetAddress)
+		api.GET("/validate/address/:coin/:address", walletsCtrl.ValidateAddress)
 		api.GET("/send/address/:coin/:address", walletsCtrl.SendToAddress)
 		api.GET("/send/cold/:coin", walletsCtrl.SendToColdStorage)
 		api.GET("/send/exchange/:coin", walletsCtrl.SendToExchange)
-		api.GET("/validate/address/:coin/:address", walletsCtrl.ValidateAddress)
-
 	}
 	r.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not Found")

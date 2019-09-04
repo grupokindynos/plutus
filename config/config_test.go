@@ -79,7 +79,6 @@ func TestGlobalResponseSuccess(t *testing.T) {
 	assert.Equal(t, float64(1), response["status"])
 }
 
-
 func TestPrivateKey(t *testing.T) {
 	// Private Key parsing
 	err := os.Setenv("KEY_PASSWORD", "rb8L7BKBDG9shnB6j8EPG67MwHaWC8Rw")
@@ -102,7 +101,7 @@ func TestNewSSHTunnel(t *testing.T) {
 	go func() {
 		_ = ssh.ListenAndServe(":2222", nil)
 	}()
-	tunnel := NewSSHTunnel("localhost:2222", nil,"localhost")
+	tunnel := NewSSHTunnel("localhost:2222", nil, "localhost")
 	assert.NotNil(t, tunnel)
 	go func() {
 		err := tunnel.Start()
