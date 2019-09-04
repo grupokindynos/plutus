@@ -160,17 +160,6 @@ var snowgem = Coin{
 		GetRawTransactionVerbosity: true,
 	},
 }
-var ethereum = Coin{
-	Tag:            "ETH",
-	ExternalSource: "",
-	RpcMethods: RPCMethods{
-		GetWalletInfo:     "",
-		GetBlockchainInfo: "",
-		GetNetworkInfo:    "",
-		GetNewAddress:     "",
-		SendToAddress:     "",
-	},
-}
 
 type RPCMethods struct {
 	GetWalletInfo              string
@@ -210,7 +199,6 @@ var Coins = map[string]*Coin{
 	"ONION": &deeponion,
 	"MNP":   &mnpcoin,
 	"XSG":   &snowgem,
-	"ETH":   &ethereum,
 }
 
 // GetCoin is the safe way to check if a coin exists and retrieve the coin data
