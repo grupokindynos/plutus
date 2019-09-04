@@ -55,7 +55,7 @@ Pull requests accepted.
 To add a new coin, you need to add parameters on `models/coin-factory/coins.go` and add the variable to the `Coins` map.
 
 Also, you need to add the environment variables to access the hot-wallet over a ssh tunnel.
-Currently every coin uses 7 variables following this structure:
+Currently every coin uses 9 variables following this structure:
 
 ```
 {Coin_ticker_uppercase}_IP=
@@ -65,6 +65,8 @@ Currently every coin uses 7 variables following this structure:
 {Coin_ticker_uppercase}_SSH_USER=
 {Coin_ticker_uppercase}_SSH_PORT=
 {Coin_ticker_uppercase}_SSH_PRIVKEY=
+{Coin_ticker_uppercase}_EXCHANGE_ADDRESS=
+{Coin_ticker_uppercase}_COLD_ADDRESS=
 ```
 
 The variables can be set using a `.env` or defining the variables on specifically like Docker or Heroku.

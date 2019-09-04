@@ -17,38 +17,6 @@ import (
 
 type WalletController struct{}
 
-func (w *WalletController) GetWalletInfo(c *gin.Context) {
-	coin := c.Param("coin")
-	coinConfig, err := coinfactory.GetCoin(coin)
-	if err != nil {
-		config.GlobalResponse(nil, err, c)
-		return
-	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
-	if err != nil {
-		config.GlobalResponse(nil, err, c)
-		return
-	}
-	rpcClient := w.RPCClient(coinConfig)
-	res, err := rpcClient.Call(coinConfig.RpcMethods.GetWalletInfo)
-	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
-		return
-	}
-	var WalletInfo rpc.GetWalletInfo
-	err = res.GetObject(&WalletInfo)
-	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
-		return
-	}
-	response := responses.Balance{
-		Confirmed:   WalletInfo.Balance,
-		Unconfirmed: WalletInfo.UnconfirmedBalance,
-	}
-	config.GlobalResponse(response, err, c)
-	return
-}
-
 func (w *WalletController) GetInfo(c *gin.Context) {
 	coin := c.Param("coin")
 	coinConfig, err := coinfactory.GetCoin(coin)
@@ -92,6 +60,38 @@ func (w *WalletController) GetInfo(c *gin.Context) {
 		Version:     NetInfo.Version,
 		Subversion:  NetInfo.Subversion,
 		Connections: NetInfo.Connections,
+	}
+	config.GlobalResponse(response, err, c)
+	return
+}
+
+func (w *WalletController) GetWalletInfo(c *gin.Context) {
+	coin := c.Param("coin")
+	coinConfig, err := coinfactory.GetCoin(coin)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	err = coinfactory.CheckCoinConfigs(coinConfig)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	rpcClient := w.RPCClient(coinConfig)
+	res, err := rpcClient.Call(coinConfig.RpcMethods.GetWalletInfo)
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
+		return
+	}
+	var WalletInfo rpc.GetWalletInfo
+	err = res.GetObject(&WalletInfo)
+	if err != nil {
+		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
+		return
+	}
+	response := responses.Balance{
+		Confirmed:   WalletInfo.Balance,
+		Unconfirmed: WalletInfo.UnconfirmedBalance,
 	}
 	config.GlobalResponse(response, err, c)
 	return
