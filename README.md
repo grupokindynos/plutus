@@ -319,7 +319,7 @@ go test ./...
 
 ## Contributing
 
-Pull requests accepted.
+To contribute to this repository, please fork it, create a new branch and submit a pull request.
 
 To add a new coin, you need to add parameters on `models/coin-factory/coins.go` and add the variable to the `Coins` map.
 
