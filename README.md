@@ -24,7 +24,7 @@ Create a new `.env` file with all the necesarry enviroment variables defined on 
 
 Run the docker image
 ```
-docker run --env-file .env kindynos/plutus:latest 
+docker run -p 8080:8080 --env-file .env kindynos/plutus:latest 
 ```
 
 ## Building
