@@ -364,12 +364,12 @@ func (w *WalletController) CheckConfigs(coin *coinfactory.Coin) error {
 	if coin.PrivKey == "" {
 		return config.ErrorNoAuthMethodProvided
 	}
-	/*	if coin.ExchangeAddress == "" {
-			return config.ErrorNoExchangeAddress
-		}
-		if coin.ColdAddress == "" {
-			return config.ErrorNoColdAddress
-		}*/
+	if coin.ExchangeAddress == "" {
+		return config.ErrorNoExchangeAddress
+	}
+	if coin.ColdAddress == "" {
+		return config.ErrorNoColdAddress
+	}
 
 	return nil
 }
