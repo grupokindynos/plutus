@@ -24,7 +24,7 @@ func (w *WalletController) GetWalletInfo(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = w.CheckConfigs(coinConfig)
+	err = coinfactory.CheckCoinConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -56,7 +56,7 @@ func (w *WalletController) GetInfo(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = w.CheckConfigs(coinConfig)
+	err = coinfactory.CheckCoinConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -104,7 +104,7 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = w.CheckConfigs(coinConfig)
+	err = coinfactory.CheckCoinConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -131,7 +131,7 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = w.CheckConfigs(coinConfig)
+	err = coinfactory.CheckCoinConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -181,7 +181,7 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = w.CheckConfigs(coinConfig)
+	err = coinfactory.CheckCoinConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -212,7 +212,7 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = w.CheckConfigs(coinConfig)
+	err = coinfactory.CheckCoinConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -238,7 +238,7 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = w.CheckConfigs(coinConfig)
+	err = coinfactory.CheckCoinConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -265,7 +265,7 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = w.CheckConfigs(coinConfig)
+	err = coinfactory.CheckCoinConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -297,7 +297,7 @@ func (w *WalletController) GetTx(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = w.CheckConfigs(coinConfig)
+	err = coinfactory.CheckCoinConfigs(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -338,38 +338,4 @@ func (w *WalletController) Send(coinConfig *coinfactory.Coin, address string, am
 		return "", err
 	}
 	return chainRes.GetString()
-}
-
-func (w *WalletController) CheckConfigs(coin *coinfactory.Coin) error {
-	if coin.Tag != "ETH" {
-		if coin.RpcUser == "" {
-			return config.ErrorNoRpcUserProvided
-		}
-		if coin.RpcPass == "" {
-			return config.ErrorNoRpcPassProvided
-		}
-	}
-	if coin.RpcPort == "" {
-		return config.ErrorNoRpcPortProvided
-	}
-	if coin.Host == "" {
-		return config.ErrorNoHostIPProvided
-	}
-	if coin.Port == "" {
-		return config.ErrorNoHostPortProvided
-	}
-	if coin.User == "" {
-		return config.ErrorNoHostUserProvided
-	}
-	if coin.PrivKey == "" {
-		return config.ErrorNoAuthMethodProvided
-	}
-	if coin.ExchangeAddress == "" {
-		return config.ErrorNoExchangeAddress
-	}
-	if coin.ColdAddress == "" {
-		return config.ErrorNoColdAddress
-	}
-
-	return nil
 }

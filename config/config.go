@@ -3,6 +3,7 @@ package config
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -75,12 +76,6 @@ type SSHTunnel struct {
 	Log    *log.Logger
 }
 
-func (tunnel *SSHTunnel) logf(fmt string, args ...interface{}) {
-	if tunnel.Log != nil {
-		tunnel.Log.Printf(fmt, args...)
-	}
-}
-
 func (tunnel *SSHTunnel) Start() error {
 	listener, err := net.Listen("tcp", tunnel.Local.String())
 	if err != nil {
@@ -93,7 +88,6 @@ func (tunnel *SSHTunnel) Start() error {
 		if err != nil {
 			return err
 		}
-		tunnel.logf("accepted connection")
 		go tunnel.forward(conn)
 	}
 }
@@ -101,21 +95,14 @@ func (tunnel *SSHTunnel) Start() error {
 func (tunnel *SSHTunnel) forward(localConn net.Conn) {
 	serverConn, err := ssh.Dial("tcp", tunnel.Server.String(), tunnel.Config)
 	if err != nil {
-		tunnel.logf("server dial error: %s", err)
 		return
 	}
-	tunnel.logf("connected to %s (1 of 2)\n", tunnel.Server.String())
 	remoteConn, err := serverConn.Dial("tcp", tunnel.Remote.String())
 	if err != nil {
-		tunnel.logf("remote dial error: %s", err)
 		return
 	}
-	tunnel.logf("connected to %s (2 of 2)\n", tunnel.Remote.String())
 	copyConn := func(writer, reader net.Conn) {
-		_, err := io.Copy(writer, reader)
-		if err != nil {
-			tunnel.logf("io.Copy error: %s", err)
-		}
+		_, _ = io.Copy(writer, reader)
 	}
 	go copyConn(localConn, remoteConn)
 	go copyConn(remoteConn, localConn)
@@ -144,7 +131,7 @@ func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTu
 
 func PrivateKey(pvKeyString string) ssh.AuthMethod {
 	encryptionPass := []byte(os.Getenv("KEY_PASSWORD"))
-	decrypted, err := decrypt(encryptionPass, pvKeyString)
+	decrypted, err := Decrypt(encryptionPass, pvKeyString)
 	if err != nil {
 		return nil
 	}
@@ -166,8 +153,24 @@ func GlobalResponse(result interface{}, err error, c *gin.Context) *gin.Context 
 	return c
 }
 
-func decrypt(key []byte, securemess string) (decodedmess string, err error) {
-	cipherText, err := base64.StdEncoding.DecodeString(securemess)
+func Encrypt(key []byte, message []byte) (encryptedMessage string, err error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return
+	}
+	cipherText := make([]byte, aes.BlockSize+len(message))
+	iv := cipherText[:aes.BlockSize]
+	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
+		return
+	}
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(cipherText[aes.BlockSize:], message)
+	encryptedMessage = base64.StdEncoding.EncodeToString(cipherText)
+	return
+}
+
+func Decrypt(key []byte, secureMessage string) (decodedMessage string, err error) {
+	cipherText, err := base64.StdEncoding.DecodeString(secureMessage)
 	if err != nil {
 		return
 	}
@@ -183,6 +186,6 @@ func decrypt(key []byte, securemess string) (decodedmess string, err error) {
 	cipherText = cipherText[aes.BlockSize:]
 	stream := cipher.NewCFBDecrypter(block, iv)
 	stream.XORKeyStream(cipherText, cipherText)
-	decodedmess = string(cipherText)
+	decodedMessage = string(cipherText)
 	return
 }

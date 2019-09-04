@@ -235,3 +235,37 @@ func GetCoin(tag string) (*Coin, error) {
 	}
 	return coin, nil
 }
+
+func CheckCoinConfigs(coin *Coin) error {
+	if coin.Tag != "ETH" {
+		if coin.RpcUser == "" {
+			return config.ErrorNoRpcUserProvided
+		}
+		if coin.RpcPass == "" {
+			return config.ErrorNoRpcPassProvided
+		}
+	}
+	if coin.RpcPort == "" {
+		return config.ErrorNoRpcPortProvided
+	}
+	if coin.Host == "" {
+		return config.ErrorNoHostIPProvided
+	}
+	if coin.Port == "" {
+		return config.ErrorNoHostPortProvided
+	}
+	if coin.User == "" {
+		return config.ErrorNoHostUserProvided
+	}
+	if coin.PrivKey == "" {
+		return config.ErrorNoAuthMethodProvided
+	}
+	if coin.ExchangeAddress == "" {
+		return config.ErrorNoExchangeAddress
+	}
+	if coin.ColdAddress == "" {
+		return config.ErrorNoColdAddress
+	}
+
+	return nil
+}
