@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/ssh"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -73,7 +72,6 @@ type SSHTunnel struct {
 	Server *Endpoint
 	Remote *Endpoint
 	Config *ssh.ClientConfig
-	Log    *log.Logger
 }
 
 func (tunnel *SSHTunnel) Start() error {
