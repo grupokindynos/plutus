@@ -83,14 +83,16 @@ func TestGlobalResponseSuccess(t *testing.T) {
 func TestPrivateKey(t *testing.T) {
 	// Private Key parsing
 	err := os.Setenv("KEY_PASSWORD", "rb8L7BKBDG9shnB6j8EPG67MwHaWC8Rw")
-	privateKeyStr := "56Rl0LvcyZxr+av38CQD9P3xUeZ/CVlsxTAlMIlCrQ5oGWd6pG3VaHbfkwqNzG94rQF7p/eY3tvOPLyBZvuScVFgFnWZ5gxqp+aHVY5ltoTcGycolfwziXFlS2TJ3t5v/dgTw7hOhVKKiaDZIRonc5dt6I7exw5S0sg7TIiLgiOOqAkSE5xa0GwY3p6+N3jS5bjQHRWg4KHK65tu34AyQadhTbOm9l4dkgkoeHTE6G28nWv7iwsJRJHS3wWAgp0BftRayKSgqOxjMQOHHc8ithzWKLEsrwx/F1aYfX/F2kR6g0NK8Uf91dGJ5LHfOK1TmD/J"
 	assert.Nil(t, err)
+	privateKeyStr := "56Rl0LvcyZxr+av38CQD9P3xUeZ/CVlsxTAlMIlCrQ5oGWd6pG3VaHbfkwqNzG94rQF7p/eY3tvOPLyBZvuScVFgFnWZ5gxqp+aHVY5ltoTcGycolfwziXFlS2TJ3t5v/dgTw7hOhVKKiaDZIRonc5dt6I7exw5S0sg7TIiLgiOOqAkSE5xa0GwY3p6+N3jS5bjQHRWg4KHK65tu34AyQadhTbOm9l4dkgkoeHTE6G28nWv7iwsJRJHS3wWAgp0BftRayKSgqOxjMQOHHc8ithzWKLEsrwx/F1aYfX/F2kR6g0NK8Uf91dGJ5LHfOK1TmD/J"
 	auth := PrivateKey(privateKeyStr)
 	assert.NotNil(t, auth)
 }
 
 func TestPrivateKeyErr(t *testing.T) {
 	// Private Key parsing
+	err := os.Setenv("KEY_PASSWORD", "")
+	assert.Nil(t, err)
 	privateKeyStr := "56Rl0LvcyZxr+av38CQD9P3xUeZ/CVlsxTAlMIlCrQ5oGWd6pG3VaHbfkwqNzG94rQF7p/eY3tvOPLyBZvuScVFgFnWZ5gxqp+aHVY5ltoTcGycolfwziXFlS2TJ3t5v/dgTw7hOhVKKiaDZIRonc5dt6I7exw5S0sg7TIiLgiOOqAkSE5xa0GwY3p6+N3jS5bjQHRWg4KHK65tu34AyQadhTbOm9l4dkgkoeHTE6G28nWv7iwsJRJHS3wWAgp0BftRayKSgqOxjMQOHHc8ithzWKLEsrwx/F1aYfX/F2kR6g0NK8Uf91dGJ5LHfOK1TmD/J"
 	auth := PrivateKey(privateKeyStr)
 	assert.Nil(t, auth)
