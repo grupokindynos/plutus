@@ -40,6 +40,8 @@ Make sure the port is configured under en enviroment variable `PORT=8080`
 
 ## API Reference
 
+> All the routes are password protected with AUTH_USERNAME and AUTH_PASSWORD set on environment variables
+
 ### Get hot-wallet status:
 
 Retrieves the hot-wallet status
