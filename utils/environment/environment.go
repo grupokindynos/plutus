@@ -74,7 +74,7 @@ type KeyPair struct {
 var Vars EnvironmentVars
 
 // This script will only work with a full set of environment variables.
-// Only meant to be used to recreate ssh keys and passwords
+// Should only be used to recreate ssh keys and passwords
 func main() {
 	err := godotenv.Load("../../.env")
 	if err != nil {
