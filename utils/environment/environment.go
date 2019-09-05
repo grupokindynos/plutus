@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -33,6 +34,34 @@ type EnvironmentVars struct {
 	CoinsVars      []CoinVar
 }
 
+func (ev *EnvironmentVars) CheckVars() error {
+	if ev.HerokuPassword == "" {
+		return errors.New("missing heroku password")
+	}
+	if ev.HerokuUsername == "" {
+		return errors.New("missing heroku username")
+	}
+	if ev.GinMode == "" {
+		return errors.New("missing gin mode")
+	}
+	if ev.KeyPassword == "" {
+		return errors.New("missing key password")
+	}
+	if ev.AuthUsername == "" {
+		return errors.New("missing auth username")
+	}
+	if ev.AuthPassword == "" {
+		return errors.New("missing auth password")
+	}
+	for _, coinVar := range ev.CoinsVars {
+		err := coinVar.CheckVars()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (ev *EnvironmentVars) ToString() string {
 	str := "" +
 		"AUTH_USERNAME=" + ev.AuthUsername + "\n" +
@@ -57,6 +86,40 @@ type CoinVar struct {
 	SshPort       string
 	ExchangeAddrs string
 	ColdAddrs     string
+}
+
+func (cv *CoinVar) CheckVars() error {
+	if cv.Coin == "" {
+		return errors.New("missing coin tag")
+	}
+	if cv.RpcUser == "" {
+		return errors.New("missing rpc user for " + cv.Coin)
+	}
+	if cv.RpcPass == "" {
+		return errors.New("missing rpc pass for " + cv.Coin)
+	}
+	if cv.RpcPort == "" {
+		return errors.New("missing rpc port for " + cv.Coin)
+	}
+	if cv.SshUser == "" {
+		return errors.New("missing ssh user for " + cv.Coin)
+	}
+	if cv.SshHost == "" {
+		return errors.New("missing ssh ip for " + cv.Coin)
+	}
+	if cv.SshPrivKey == "" {
+		return errors.New("missing ssh private key for " + cv.Coin)
+	}
+	if cv.SshPort == "" {
+		return errors.New("missing ssh port for " + cv.Coin)
+	}
+	if cv.ExchangeAddrs == "" {
+		return errors.New("missing exchange address for " + cv.Coin)
+	}
+	if cv.ColdAddrs == "" {
+		return errors.New("missing cold address for " + cv.Coin)
+	}
+	return nil
 }
 
 func (cv *CoinVar) ToString() string {
@@ -114,9 +177,15 @@ func main() {
 		log.Fatal("Error moving .env file")
 	}
 	// Get and object with old variables
-	OldVars = getOldVars()
+	OldVars, err = getOldVars()
+	if err != nil {
+		panic(err)
+	}
 	// Generate new keys
-	NewVars = genNewVars()
+	NewVars, err = genNewVars()
+	if err != nil {
+		panic(err)
+	}
 	log.Println("Updating remote keys...")
 	// Update new ssh keys with a ssh client using old keys
 	for _, server := range OldVars.CoinsVars {
@@ -133,7 +202,7 @@ func main() {
 		}
 	}
 	// Update heroku environment variables.
-
+	log.Println("Updating heroku deployment variables...")
 	// Create environment map
 	envMap := map[string]*string{
 		"AUTH_PASSWORD": &NewVars.AuthPassword,
@@ -141,22 +210,32 @@ func main() {
 		"KEY_PASSWORD":  &NewVars.KeyPassword,
 		"GIN_MODE":      &NewVars.GinMode,
 	}
-	for _, env := range NewVars.CoinsVars {
-		envMap[strings.ToUpper(env.Coin)+"_IP"] = &env.SshHost
-		envMap[strings.ToUpper(env.Coin)+"_RPC_USER"] = &env.RpcUser
-		envMap[strings.ToUpper(env.Coin)+"_RPC_PASS"] = &env.RpcPass
-		envMap[strings.ToUpper(env.Coin)+"_RPC_PORT"] = &env.RpcPort
-		envMap[strings.ToUpper(env.Coin)+"_SSH_USER"] = &env.SshUser
-		envMap[strings.ToUpper(env.Coin)+"_SSH_PORT"] = &env.SshPort
-		envMap[strings.ToUpper(env.Coin)+"_SSH_PRIVKEY"] = &env.SshPrivKey
-		envMap[strings.ToUpper(env.Coin)+"_COLD_ADDRESS"] = &env.ColdAddrs
-		envMap[strings.ToUpper(env.Coin)+"_EXCHANGE_ADDRESS"] = &env.ExchangeAddrs
-	}
-	res, err := h.ConfigVarUpdate(context.Background(), "plutus-wallets", envMap)
+	// First update main variables
+	log.Println("Updating main heroku deployment variables...")
+	_, err = h.ConfigVarUpdate(context.Background(), "plutus-wallets", envMap)
 	if err != nil {
-		panic("critical error, unable to update heroku variables, need manual correction urgently!")
+		panic("critical error, unable to update heroku variables")
 	}
-	fmt.Println(res)
+	for _, env := range NewVars.CoinsVars {
+		log.Println("Updating heroku deployment variables for " + strings.ToUpper(env.Coin))
+		coinVars := make(map[string]*string)
+		coinVars[strings.ToUpper(env.Coin)+"_IP"] = &env.SshHost
+		coinVars[strings.ToUpper(env.Coin)+"_RPC_USER"] = &env.RpcUser
+		coinVars[strings.ToUpper(env.Coin)+"_RPC_PASS"] = &env.RpcPass
+		coinVars[strings.ToUpper(env.Coin)+"_RPC_PORT"] = &env.RpcPort
+		coinVars[strings.ToUpper(env.Coin)+"_SSH_USER"] = &env.SshUser
+		coinVars[strings.ToUpper(env.Coin)+"_SSH_PORT"] = &env.SshPort
+		coinVars[strings.ToUpper(env.Coin)+"_SSH_PRIVKEY"] = &env.SshPrivKey
+		coinVars[strings.ToUpper(env.Coin)+"_COLD_ADDRESS"] = &env.ColdAddrs
+		coinVars[strings.ToUpper(env.Coin)+"_EXCHANGE_ADDRESS"] = &env.ExchangeAddrs
+		_, err := h.ConfigVarUpdate(context.Background(), "plutus-wallets", coinVars)
+		if err != nil {
+			fmt.Println(err)
+			panic("critical error, unable to update heroku variables, need manual correction urgently!")
+		}
+	}
+
+	// TODO here we can update AUTH_USERNAME and AUTH_PASSWORD for other microservices using plutus
 	// Dump new keys to .env file
 	err = saveNewVars()
 	if err != nil {
@@ -197,7 +276,7 @@ func updateRemoteKey(coinVars CoinVar, newCoinPubKey string) error {
 	return nil
 }
 
-func getOldVars() EnvironmentVars {
+func getOldVars() (EnvironmentVars, error) {
 	Vars := EnvironmentVars{
 		HerokuUsername: os.Getenv("HEROKU_USERNAME"),
 		HerokuPassword: os.Getenv("HEROKU_PASSWORD"),
@@ -223,20 +302,23 @@ func getOldVars() EnvironmentVars {
 		}
 		Vars.CoinsVars = append(Vars.CoinsVars, coinVars)
 	}
-	return Vars
+	err := Vars.CheckVars()
+	return Vars, err
 }
 
-func genNewVars() EnvironmentVars {
+func genNewVars() (EnvironmentVars, error) {
 	newAuthUsername := generateRandomPassword(128)
 	newAuthPassword := generateRandomPassword(128)
 	newDecryptionKey := generateRandomPassword(32)
 
 	Vars := EnvironmentVars{
-		AuthUsername: newAuthUsername,
-		AuthPassword: newAuthPassword,
-		GinMode:      os.Getenv("GIN_MODE"),
-		KeyPassword:  newDecryptionKey,
-		CoinsVars:    nil,
+		HerokuUsername: os.Getenv("HEROKU_USERNAME"),
+		HerokuPassword: os.Getenv("HEROKU_PASSWORD"),
+		AuthUsername:   newAuthUsername,
+		AuthPassword:   newAuthPassword,
+		GinMode:        os.Getenv("GIN_MODE"),
+		KeyPassword:    newDecryptionKey,
+		CoinsVars:      nil,
 	}
 	for key := range coinfactory.Coins {
 		log.Println("Creating vars for " + strings.ToUpper(key))
@@ -260,7 +342,8 @@ func genNewVars() EnvironmentVars {
 		}
 		Vars.CoinsVars = append(Vars.CoinsVars, coinVars)
 	}
-	return Vars
+	err := Vars.CheckVars()
+	return Vars, err
 }
 
 func saveNewVars() error {
@@ -272,14 +355,16 @@ func saveNewVars() error {
 }
 
 func genPrivKeyPair() KeyPair {
-	bitSize := 4096
-	privateKey, err := generatePrivateKey(bitSize)
+	privateKey, err := generatePrivateKey()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
+	privDER, err := x509.MarshalECPrivateKey(privateKey)
+	if err != nil {
+		panic(err)
+	}
 	privBlock := pem.Block{
-		Type:    "RSA PRIVATE KEY",
+		Type:    "EC PRIVATE KEY",
 		Headers: nil,
 		Bytes:   privDER,
 	}
@@ -291,19 +376,16 @@ func genPrivKeyPair() KeyPair {
 	return KeyPair{Private: privateBytes, Public: publicKeyBytes}
 }
 
-func generatePrivateKey(bitSize int) (*rsa.PrivateKey, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
-	if err != nil {
-		return nil, err
-	}
-	err = privateKey.Validate()
+func generatePrivateKey() (*ecdsa.PrivateKey, error) {
+	pubkeyCurve := elliptic.P256()
+	privateKey, err := ecdsa.GenerateKey(pubkeyCurve, rand.Reader)
 	if err != nil {
 		return nil, err
 	}
 	return privateKey, nil
 }
 
-func generatePublicKey(privatekey *rsa.PublicKey) ([]byte, error) {
+func generatePublicKey(privatekey *ecdsa.PublicKey) ([]byte, error) {
 	publicRsaKey, err := ssh.NewPublicKey(privatekey)
 	if err != nil {
 		return nil, err
