@@ -81,8 +81,8 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	log.Println("Creating environment file")
-	date := time.Now().String()
-	err = os.Rename("../../.env", "../../old-env-backup" + date)
+	date := time.Now().Format("2006-01-02")
+	err = os.Rename("../../.env", "../../old-env-backup-" + date)
 	if err != nil {
 		log.Fatal("Error moving .env file")
 	}
