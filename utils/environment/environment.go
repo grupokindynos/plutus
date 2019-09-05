@@ -232,12 +232,30 @@ func main() {
 		coinVars[strings.ToUpper(env.Coin)+"_EXCHANGE_ADDRESS"] = &env.ExchangeAddrs
 		_, err := h.ConfigVarUpdate(context.Background(), "plutus-wallets", coinVars)
 		if err != nil {
-			fmt.Println(err)
-			panic("critical error, unable to update heroku variables, need manual correction urgently!")
+			panic("critical error, unable to update heroku variables")
 		}
 	}
 
-	// TODO here we can update AUTH_USERNAME and AUTH_PASSWORD for other microservices using plutus
+	log.Println("Updating Plutus access to other microservices...")
+
+/*	plutusAccess := map[string]*string{
+		"PLUTUS_USERNAME": &NewVars.AuthUsername,
+		"PLUTUS_PASSWORD": &NewVars.AuthPassword,
+	}
+
+	// Here we update plutus access to shift microservice
+	log.Println("Updating Plutus access to Shift")
+	_, err = h.ConfigVarUpdate(context.Background(), "MISSING_NAME", plutusAccess)
+	if err != nil {
+		panic("critical error, unable to update heroku variables")
+	}
+	// Here we update plutus access to adrestia microservice
+	log.Println("Updating Plutus access to Adrestria")
+	_, err = h.ConfigVarUpdate(context.Background(), "MISSING_NAME", plutusAccess)
+	if err != nil {
+		panic("critical error, unable to update heroku variables")
+	}*/
+
 	// Dump new keys to .env file
 	err = saveNewVars()
 	if err != nil {
