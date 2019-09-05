@@ -67,7 +67,9 @@ func (ev *EnvironmentVars) ToString() string {
 		"AUTH_USERNAME=" + ev.AuthUsername + "\n" +
 		"AUTH_PASSWORD=" + ev.AuthPassword + "\n" +
 		"KEY_PASSWORD=" + ev.KeyPassword + "\n" +
-		"GIN_MODE=" + ev.GinMode + "\n"
+		"GIN_MODE=" + ev.GinMode + "\n" +
+		"HEROKU_USERNAME=" + ev.HerokuUsername + "\n" +
+		"HEROKU_PASSWORD=" + ev.HerokuPassword + "\n"
 	for _, coinVar := range ev.CoinsVars {
 		str += coinVar.ToString()
 	}
