@@ -238,23 +238,23 @@ func main() {
 
 	log.Println("Updating Plutus access to other microservices...")
 
-/*	plutusAccess := map[string]*string{
-		"PLUTUS_USERNAME": &NewVars.AuthUsername,
-		"PLUTUS_PASSWORD": &NewVars.AuthPassword,
-	}
+	/*	plutusAccess := map[string]*string{
+			"PLUTUS_USERNAME": &NewVars.AuthUsername,
+			"PLUTUS_PASSWORD": &NewVars.AuthPassword,
+		}
 
-	// Here we update plutus access to shift microservice
-	log.Println("Updating Plutus access to Shift")
-	_, err = h.ConfigVarUpdate(context.Background(), "MISSING_NAME", plutusAccess)
-	if err != nil {
-		panic("critical error, unable to update heroku variables")
-	}
-	// Here we update plutus access to adrestia microservice
-	log.Println("Updating Plutus access to Adrestria")
-	_, err = h.ConfigVarUpdate(context.Background(), "MISSING_NAME", plutusAccess)
-	if err != nil {
-		panic("critical error, unable to update heroku variables")
-	}*/
+		// Here we update plutus access to shift microservice
+		log.Println("Updating Plutus access to Shift")
+		_, err = h.ConfigVarUpdate(context.Background(), "MISSING_NAME", plutusAccess)
+		if err != nil {
+			panic("critical error, unable to update heroku variables")
+		}
+		// Here we update plutus access to adrestia microservice
+		log.Println("Updating Plutus access to Adrestria")
+		_, err = h.ConfigVarUpdate(context.Background(), "MISSING_NAME", plutusAccess)
+		if err != nil {
+			panic("critical error, unable to update heroku variables")
+		}*/
 
 	// Dump new keys to .env file
 	err = saveNewVars()

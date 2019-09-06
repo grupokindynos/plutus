@@ -36,9 +36,10 @@ var (
 	ErrorNoExchangeAddress       = errors.New("missing exchange address to send")
 	ErrorUnableToSend            = errors.New("unable to send transaction")
 	ErrorUnableToValidateAddress = errors.New("unable to validate address")
+	ErrorTunnelConn              = errors.New("unable to create tunnel connection")
 
 	HttpClient = &http.Client{
-		Timeout: time.Second * 10,
+		Timeout: time.Second * 5,
 	}
 )
 
@@ -82,28 +83,58 @@ func (tunnel *SSHTunnel) Start() error {
 	defer listener.Close()
 	tunnel.Local.Port = listener.Addr().(*net.TCPAddr).Port
 	for {
+		errorChan := make(chan error)
 		conn, err := listener.Accept()
 		if err != nil {
 			return err
 		}
-		go tunnel.forward(conn)
+		go func() {
+			err := tunnel.forward(conn)
+			if err != nil {
+				errorChan <- err
+				return
+			}
+		}()
+		select {
+		case err := <-errorChan:
+			return err
+		}
 	}
 }
 
-func (tunnel *SSHTunnel) forward(localConn net.Conn) {
+func (tunnel *SSHTunnel) forward(localConn net.Conn) error {
 	serverConn, err := ssh.Dial("tcp", tunnel.Server.String(), tunnel.Config)
 	if err != nil {
-		return
+		return err
 	}
 	remoteConn, err := serverConn.Dial("tcp", tunnel.Remote.String())
 	if err != nil {
-		return
+		return err
 	}
-	copyConn := func(writer, reader net.Conn) {
-		_, _ = io.Copy(writer, reader)
+	copyConn := func(writer, reader net.Conn) error {
+		_, err = io.Copy(writer, reader)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
-	go copyConn(localConn, remoteConn)
-	go copyConn(remoteConn, localConn)
+	errorChan := make(chan error)
+	go func() {
+		err := copyConn(localConn, remoteConn)
+		if err != nil {
+			errorChan <- err
+		}
+	}()
+	go func() {
+		err := copyConn(remoteConn, localConn)
+		if err != nil {
+			errorChan <- err
+		}
+	}()
+	select {
+	case err := <-errorChan:
+		return err
+	}
 }
 
 func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTunnel {
@@ -118,6 +149,7 @@ func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTu
 			HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 				return nil
 			},
+			Timeout: time.Second * 5,
 		},
 		Local:  localEndpoint,
 		Server: server,
