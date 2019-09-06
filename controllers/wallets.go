@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+type RPCClient jsonrpc.RPCClient
+
 type WalletController struct{}
 
 func (w *WalletController) GetInfo(c *gin.Context) {
@@ -28,11 +30,7 @@ func (w *WalletController) GetInfo(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	rpcClient, err := w.RPCClient(coinConfig)
-	if err != nil {
-		config.GlobalResponse(nil, config.ErrorTunnelConn, c)
-		return
-	}
+	rpcClient := w.RPCClient(coinConfig)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.GetBlockchainInfo)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
@@ -80,11 +78,7 @@ func (w *WalletController) GetWalletInfo(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	rpcClient, err := w.RPCClient(coinConfig)
-	if err != nil {
-		config.GlobalResponse(nil, config.ErrorTunnelConn, c)
-		return
-	}
+	rpcClient := w.RPCClient(coinConfig)
 	res, err := rpcClient.Call(coinConfig.RpcMethods.GetWalletInfo)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
@@ -116,11 +110,7 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	rpcClient, err := w.RPCClient(coinConfig)
-	if err != nil {
-		config.GlobalResponse(nil, config.ErrorTunnelConn, c)
-		return
-	}
+	rpcClient := w.RPCClient(coinConfig)
 	res, err := rpcClient.Call(coinConfig.RpcMethods.GetNewAddress, jsonrpc.Params(""))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
@@ -147,11 +137,7 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	rpcClient, err := w.RPCClient(coinConfig)
-	if err != nil {
-		config.GlobalResponse(nil, config.ErrorTunnelConn, c)
-		return
-	}
+	rpcClient := w.RPCClient(coinConfig)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.GetBlockchainInfo)
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
@@ -285,11 +271,7 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	rpcClient, err := w.RPCClient(coinConfig)
-	if err != nil {
-		config.GlobalResponse(nil, config.ErrorTunnelConn, c)
-		return
-	}
+	rpcClient := w.RPCClient(coinConfig)
 	res, err := rpcClient.Call(coinConfig.RpcMethods.ValidateAddress, jsonrpc.Params(address))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToValidateAddress, c)
@@ -321,11 +303,7 @@ func (w *WalletController) GetTx(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	rpcClient, err := w.RPCClient(coinConfig)
-	if err != nil {
-		config.GlobalResponse(nil, config.ErrorTunnelConn, c)
-		return
-	}
+	rpcClient := w.RPCClient(coinConfig)
 	res, err := rpcClient.Call(coinConfig.RpcMethods.GetRawTransaction, jsonrpc.Params(txid, coinConfig.RpcMethods.GetRawTransactionVerbosity))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToValidateAddress, c)
@@ -335,7 +313,7 @@ func (w *WalletController) GetTx(c *gin.Context) {
 	return
 }
 
-func (w *WalletController) RPCClient(coinConfig *coinfactory.Coin) (jsonrpc.RPCClient, error) {
+func (w *WalletController) RPCClient(coinConfig *coinfactory.Coin) RPCClient {
 	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
 	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
 	go func() {
@@ -348,14 +326,11 @@ func (w *WalletController) RPCClient(coinConfig *coinfactory.Coin) (jsonrpc.RPCC
 			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
 		},
 	})
-	return rpcClient, nil
+	return rpcClient
 }
 
 func (w *WalletController) Send(coinConfig *coinfactory.Coin, address string, amount string) (string, error) {
-	rpcClient, err := w.RPCClient(coinConfig)
-	if err != nil {
-		return "", err
-	}
+	rpcClient := w.RPCClient(coinConfig)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.SendToAddress, jsonrpc.Params(address, amount))
 	if err != nil {
 		return "", err

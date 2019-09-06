@@ -36,8 +36,6 @@ var (
 	ErrorNoExchangeAddress       = errors.New("missing exchange address to send")
 	ErrorUnableToSend            = errors.New("unable to send transaction")
 	ErrorUnableToValidateAddress = errors.New("unable to validate address")
-	ErrorTunnelConn              = errors.New("unable to create tunnel connection")
-
 	HttpClient = &http.Client{
 		Timeout: time.Second * 5,
 	}

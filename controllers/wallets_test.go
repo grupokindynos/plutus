@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/plutus/config"
+	coinfactory "github.com/grupokindynos/plutus/models/coin-factory"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
@@ -268,4 +269,11 @@ func TestWalletController_GetTx2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, config.ErrorNoRpcUserProvided.Error(), response["error"])
 	assert.Equal(t, float64(-1), response["status"])
+}
+
+func TestWalletController_RPCClient(t *testing.T) {
+	polis, err := coinfactory.GetCoin("polis")
+	assert.Nil(t, err)
+	rpcClient := wCtrl.RPCClient(polis)
+	assert.NotNil(t, rpcClient)
 }
