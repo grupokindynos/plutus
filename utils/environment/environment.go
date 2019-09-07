@@ -235,13 +235,18 @@ func main() {
 			panic("critical error, unable to update heroku variables")
 		}
 	}
-
+	plutusAccess := map[string]*string{
+		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
+		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
+	}
 	log.Println("Updating Plutus access to other microservices...")
-
-	/*	plutusAccess := map[string]*string{
-			"PLUTUS_USERNAME": &NewVars.AuthUsername,
-			"PLUTUS_PASSWORD": &NewVars.AuthPassword,
-		}
+	// Here we update plutus access to hestia microservice
+	log.Println("Updating Plutus access to Hestia")
+	_, err = h.ConfigVarUpdate(context.Background(), "hestia-database", plutusAccess)
+	if err != nil {
+		panic("critical error, unable to update heroku variables")
+	}
+	/*
 
 		// Here we update plutus access to shift microservice
 		log.Println("Updating Plutus access to Shift")
