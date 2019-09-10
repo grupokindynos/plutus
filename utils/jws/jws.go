@@ -1,18 +1,21 @@
 package jws
 
 import (
+	"crypto/rsa"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/base64"
 	"encoding/json"
 	"gopkg.in/square/go-jose.v2"
 )
 
-func DecodeJWS(token string, encodedPubKey string) ([]byte,  error) {
+func DecodeJWS(token string, encodedPubKey string) ([]byte, error) {
 	pubKeyBytes, err := base64.StdEncoding.DecodeString(encodedPubKey)
 	if err != nil {
 		return nil, err
 	}
-	rsaPubKey, err := x509.ParsePKCS1PublicKey(pubKeyBytes)
+	var rsaPubKey rsa.PublicKey
+	_, err = asn1.Unmarshal(pubKeyBytes, &rsaPubKey)
 	if err != nil {
 		return nil, err
 	}

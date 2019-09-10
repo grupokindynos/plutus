@@ -126,7 +126,12 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	config.GlobalResponse(addressRes, err, c)
+	encodedRes, err := jws.EncodeJWS(addressRes, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	config.GlobalResponse(encodedRes, nil, c)
 	return
 }
 
@@ -208,12 +213,12 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
+	/*txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
 		return
-	}
-	config.GlobalResponse(txid, nil, c)
+	}*/
+	config.GlobalResponse("", nil, c)
 	return
 }
 
@@ -334,7 +339,12 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 	response := responses.Address{
 		Valid: AddressValidation.Ismine,
 	}
-	config.GlobalResponse(response, nil, c)
+	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		config.GlobalResponse(encodedRes, err, c)
+		return
+	}
+	config.GlobalResponse(encodedRes, nil, c)
 	return
 }
 

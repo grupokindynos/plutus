@@ -16,6 +16,6 @@ type SendAddressBodyReq struct {
 }
 
 type SendAddressInternalBodyReq struct {
-	Coin   string `json:"coin"`
+	Coin   string  `json:"coin"`
 	Amount float64 `json:"amount"`
 }

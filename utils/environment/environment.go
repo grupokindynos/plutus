@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
@@ -37,6 +38,8 @@ type EnvironmentVars struct {
 	TychePrivKey    string
 	AdrestiaPubKey  string
 	AdrestiaPrivKey string
+	PlutusPubKey    string
+	PlutusPrivKey   string
 	CoinsVars       []CoinVar
 }
 
@@ -77,7 +80,13 @@ func (ev *EnvironmentVars) ToString() string {
 		"HEROKU_USERNAME=" + ev.HerokuUsername + "\n" +
 		"HEROKU_PASSWORD=" + ev.HerokuPassword + "\n" +
 		"TYCHE_PUBLIC_KEY=" + ev.TychePubKey + "\n" +
-		"ADRESTIA_PUBLIC_KEY=" + ev.AdrestiaPubKey + "\n"
+		// TODO remove
+		"TYCHE_PRIVATE_KEY=" + ev.TychePrivKey + "\n" +
+		"ADRESTIA_PUBLIC_KEY=" + ev.AdrestiaPubKey + "\n" +
+		// TODO remove
+		"ADRESTIA_PRIVATE_KEY=" + ev.AdrestiaPrivKey + "\n" +
+		"PLUTUS_PRIVATE_KEY=" + ev.AdrestiaPrivKey + "\n" +
+		"PLUTUS_PUBLIC_KEY=" + ev.PlutusPubKey + "\n"
 
 	for _, coinVar := range ev.CoinsVars {
 		str += coinVar.ToString()
@@ -216,6 +225,8 @@ func main() {
 		"KEY_PASSWORD":        &NewVars.KeyPassword,
 		"TYCHE_PUBLIC_KEY":    &NewVars.TychePubKey,
 		"ADRESTIA_PUBLIC_KEY": &NewVars.AdrestiaPubKey,
+		"PLUTUS_PUBLIC_KEY":   &NewVars.PlutusPubKey,
+		"PLUTUS_PRIVATE_KEY":  &NewVars.PlutusPrivKey,
 		"GIN_MODE":            &NewVars.GinMode,
 	}
 	// First update main variables
@@ -257,6 +268,8 @@ func main() {
 		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
 		"TYCHE_PRIV_KEY":       &NewVars.TychePrivKey,
 		"TYCHE_PUBLIC_KEY":     &NewVars.TychePubKey,
+		"ADRESTIA_PUBLIC_KEY":  &NewVars.AdrestiaPubKey,
+		"PLUTUS_PUBLIC_KEY":    &NewVars.PlutusPubKey,
 	}
 	_, err = h.ConfigVarUpdate(context.Background(), "tyche-shift", tycheAccess)
 	if err != nil {
@@ -269,6 +282,8 @@ func main() {
 		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
 		"ADRESTIA_PRIV_KEY":    &NewVars.AdrestiaPrivKey,
 		"ADRESTIA_PUBLIC_KEY":  &NewVars.AdrestiaPubKey,
+		"TYCHE_PUBLIC_KEY":     &NewVars.TychePubKey,
+		"PLUTUS_PUBLIC_KEY":    &NewVars.PlutusPubKey,
 	}
 	_, err = h.ConfigVarUpdate(context.Background(), "adrestia-exchanges", addrestiaAccess)
 	if err != nil {
@@ -352,14 +367,20 @@ func genNewVars() (EnvironmentVars, error) {
 	if err != nil {
 		panic(err)
 	}
-	tychePubKeyBytes := x509.MarshalPKCS1PublicKey(&newTychePair.PublicKey)
+	tychePubKeyBytes, _ := asn1.Marshal(newTychePair.PublicKey)
 	tychePrivKeyBytes := x509.MarshalPKCS1PrivateKey(newTychePair)
 	newAddrestiaKeyPair, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		panic(err)
 	}
-	addrestiaPubKeyBytes := x509.MarshalPKCS1PublicKey(&newAddrestiaKeyPair.PublicKey)
+	addrestiaPubKeyBytes, _ := asn1.Marshal(newAddrestiaKeyPair.PublicKey)
 	addrestiaPrivKeyBytes := x509.MarshalPKCS1PrivateKey(newAddrestiaKeyPair)
+	newPlutusKeyPair, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		panic(err)
+	}
+	plutusPubKeyBytes, _ := asn1.Marshal(newAddrestiaKeyPair.PublicKey)
+	plutusPrivKeyBytes := x509.MarshalPKCS1PrivateKey(newPlutusKeyPair)
 	Vars := EnvironmentVars{
 		HerokuUsername:  os.Getenv("HEROKU_USERNAME"),
 		HerokuPassword:  os.Getenv("HEROKU_PASSWORD"),
@@ -371,6 +392,8 @@ func genNewVars() (EnvironmentVars, error) {
 		TychePubKey:     base64.StdEncoding.EncodeToString(tychePubKeyBytes),
 		AdrestiaPrivKey: base64.StdEncoding.EncodeToString(addrestiaPrivKeyBytes),
 		AdrestiaPubKey:  base64.StdEncoding.EncodeToString(addrestiaPubKeyBytes),
+		PlutusPrivKey:   base64.StdEncoding.EncodeToString(plutusPrivKeyBytes),
+		PlutusPubKey:    base64.StdEncoding.EncodeToString(plutusPubKeyBytes),
 		CoinsVars:       nil,
 	}
 	for key := range coinfactory.Coins {
