@@ -224,7 +224,7 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
+	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -261,7 +261,7 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
+	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
