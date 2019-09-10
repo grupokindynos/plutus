@@ -31,6 +31,8 @@ type EnvironmentVars struct {
 	AuthPassword   string
 	GinMode        string
 	KeyPassword    string
+	TychePubKey    string
+	TychePrivKey   string
 	CoinsVars      []CoinVar
 }
 
@@ -210,6 +212,7 @@ func main() {
 		"AUTH_PASSWORD": &NewVars.AuthPassword,
 		"AUTH_USERNAME": &NewVars.AuthUsername,
 		"KEY_PASSWORD":  &NewVars.KeyPassword,
+		"TYCHE_PUBLIC_KEY":  &NewVars.TychePubKey,
 		"GIN_MODE":      &NewVars.GinMode,
 	}
 	// First update main variables
@@ -235,14 +238,25 @@ func main() {
 			panic("critical error, unable to update heroku variables")
 		}
 	}
-	plutusAccess := map[string]*string{
-		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
-		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
-	}
 	log.Println("Updating Plutus access to other microservices...")
 	// Here we update plutus access to hestia microservice
 	log.Println("Updating Plutus access to Hestia")
-	_, err = h.ConfigVarUpdate(context.Background(), "hestia-database", plutusAccess)
+	hestiaAccess := map[string]*string{
+		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
+		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
+	}
+	_, err = h.ConfigVarUpdate(context.Background(), "hestia-database", hestiaAccess)
+	if err != nil {
+		panic("critical error, unable to update heroku variables")
+	}
+	log.Println("Updating Plutus access to Tyche")
+	tycheAccess := map[string]*string{
+		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
+		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
+		"TYCHE_PRIV_KEY": &NewVars.TychePrivKey,
+		"TYCHE_PUBLIC_KEY": &NewVars.TychePubKey,
+	}
+	_, err = h.ConfigVarUpdate(context.Background(), "hestia-database", tycheAccess)
 	if err != nil {
 		panic("critical error, unable to update heroku variables")
 	}
@@ -335,7 +349,10 @@ func genNewVars() (EnvironmentVars, error) {
 	newAuthUsername := generateRandomPassword(128)
 	newAuthPassword := generateRandomPassword(128)
 	newDecryptionKey := generateRandomPassword(32)
-
+	/*newTychePair, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		panic(err)
+	}*/
 	Vars := EnvironmentVars{
 		HerokuUsername: os.Getenv("HEROKU_USERNAME"),
 		HerokuPassword: os.Getenv("HEROKU_PASSWORD"),

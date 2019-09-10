@@ -7,6 +7,7 @@ import (
 	"github.com/grupokindynos/plutus/config"
 	"github.com/grupokindynos/plutus/models/blockbook"
 	coinfactory "github.com/grupokindynos/plutus/models/coin-factory"
+	"github.com/grupokindynos/plutus/models/common"
 	"github.com/grupokindynos/plutus/models/responses"
 	"github.com/grupokindynos/plutus/models/rpc"
 	"github.com/ybbus/jsonrpc"
@@ -117,7 +118,7 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		return
 	}
 	address, err := res.GetString()
-	addressRes := responses.NewAddress{Address:address}
+	addressRes := responses.NewAddress{Address: address}
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
 		return
@@ -260,8 +261,8 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 }
 
 func (w *WalletController) ValidateAddress(c *gin.Context) {
-	coin := c.Param("coin")
-	address := c.Param("address")
+	var BodyReq common.BodyReq
+	token := c.BindJSON(&BodyReq)
 	coinConfig, err := coinfactory.GetCoin(coin)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
