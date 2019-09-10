@@ -39,8 +39,10 @@ func ApplyRoutes(r *gin.Engine) {
 		api.GET("/balance/:coin", walletsCtrl.GetWalletInfo)
 		api.GET("/tx/:coin/:txid", walletsCtrl.GetTx)
 		api.GET("/address/:coin", walletsCtrl.GetAddress)
+		// For this routes, only Tyche has access
 		api.POST("/validate/address", walletsCtrl.ValidateAddress)
 		api.POST("/send/address", walletsCtrl.SendToAddress)
+		// For this routes, only Adrestia has access
 		api.POST("/send/cold", walletsCtrl.SendToColdStorage)
 		api.POST("/send/exchange", walletsCtrl.SendToExchange)
 	}

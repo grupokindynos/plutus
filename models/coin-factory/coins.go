@@ -177,7 +177,6 @@ type Coin struct {
 	ExternalSource  string
 	RpcMethods      RPCMethods
 	ColdAddress     string
-	ExchangeAddress string
 	Tag             string
 	RpcUser         string
 	RpcPass         string
@@ -213,7 +212,6 @@ func GetCoin(tag string) (*Coin, error) {
 		ExternalSource:  coin.ExternalSource,
 		RpcMethods:      coin.RpcMethods,
 		ColdAddress:     os.Getenv(strings.ToUpper(tag) + "_COLD_ADDRESS"),
-		ExchangeAddress: os.Getenv(strings.ToUpper(tag) + "_EXCHANGE_ADDRESS"),
 		RpcUser:         os.Getenv(strings.ToUpper(tag) + "_RPC_USER"),
 		RpcPass:         os.Getenv(strings.ToUpper(tag) + "_RPC_PASS"),
 		RpcPort:         os.Getenv(strings.ToUpper(tag) + "_RPC_PORT"),
@@ -248,9 +246,6 @@ func CheckCoinConfigs(coin *Coin) error {
 	}
 	if coin.PrivKey == "" {
 		return config.ErrorNoAuthMethodProvided
-	}
-	if coin.ExchangeAddress == "" {
-		return config.ErrorNoExchangeAddress
 	}
 	if coin.ColdAddress == "" {
 		return config.ErrorNoColdAddress
