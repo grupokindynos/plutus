@@ -174,18 +174,17 @@ type RPCMethods struct {
 }
 
 type Coin struct {
-	ExternalSource  string
-	RpcMethods      RPCMethods
-	ColdAddress     string
-	ExchangeAddress string
-	Tag             string
-	RpcUser         string
-	RpcPass         string
-	RpcPort         string
-	Host            string
-	Port            string
-	User            string
-	PrivKey         string
+	ExternalSource string
+	RpcMethods     RPCMethods
+	ColdAddress    string
+	Tag            string
+	RpcUser        string
+	RpcPass        string
+	RpcPort        string
+	Host           string
+	Port           string
+	User           string
+	PrivKey        string
 }
 
 var Coins = map[string]*Coin{
@@ -209,18 +208,17 @@ func GetCoin(tag string) (*Coin, error) {
 		return nil, config.ErrorNoCoin
 	}
 	coin = &Coin{
-		Tag:             coin.Tag,
-		ExternalSource:  coin.ExternalSource,
-		RpcMethods:      coin.RpcMethods,
-		ColdAddress:     os.Getenv(strings.ToUpper(tag) + "_COLD_ADDRESS"),
-		ExchangeAddress: os.Getenv(strings.ToUpper(tag) + "_EXCHANGE_ADDRESS"),
-		RpcUser:         os.Getenv(strings.ToUpper(tag) + "_RPC_USER"),
-		RpcPass:         os.Getenv(strings.ToUpper(tag) + "_RPC_PASS"),
-		RpcPort:         os.Getenv(strings.ToUpper(tag) + "_RPC_PORT"),
-		Host:            os.Getenv(strings.ToUpper(tag) + "_IP"),
-		Port:            os.Getenv(strings.ToUpper(tag) + "_SSH_PORT"),
-		User:            os.Getenv(strings.ToUpper(tag) + "_SSH_USER"),
-		PrivKey:         os.Getenv(strings.ToUpper(tag) + "_SSH_PRIVKEY"),
+		Tag:            coin.Tag,
+		ExternalSource: coin.ExternalSource,
+		RpcMethods:     coin.RpcMethods,
+		ColdAddress:    os.Getenv(strings.ToUpper(tag) + "_COLD_ADDRESS"),
+		RpcUser:        os.Getenv(strings.ToUpper(tag) + "_RPC_USER"),
+		RpcPass:        os.Getenv(strings.ToUpper(tag) + "_RPC_PASS"),
+		RpcPort:        os.Getenv(strings.ToUpper(tag) + "_RPC_PORT"),
+		Host:           os.Getenv(strings.ToUpper(tag) + "_IP"),
+		Port:           os.Getenv(strings.ToUpper(tag) + "_SSH_PORT"),
+		User:           os.Getenv(strings.ToUpper(tag) + "_SSH_USER"),
+		PrivKey:        os.Getenv(strings.ToUpper(tag) + "_SSH_PRIVKEY"),
 	}
 	return coin, nil
 }
@@ -248,9 +246,6 @@ func CheckCoinConfigs(coin *Coin) error {
 	}
 	if coin.PrivKey == "" {
 		return config.ErrorNoAuthMethodProvided
-	}
-	if coin.ExchangeAddress == "" {
-		return config.ErrorNoExchangeAddress
 	}
 	if coin.ColdAddress == "" {
 		return config.ErrorNoColdAddress

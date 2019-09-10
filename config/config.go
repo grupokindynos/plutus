@@ -36,7 +36,7 @@ var (
 	ErrorNoExchangeAddress       = errors.New("missing exchange address to send")
 	ErrorUnableToSend            = errors.New("unable to send transaction")
 	ErrorUnableToValidateAddress = errors.New("unable to validate address")
-	HttpClient = &http.Client{
+	HttpClient                   = &http.Client{
 		Timeout: time.Second * 5,
 	}
 )

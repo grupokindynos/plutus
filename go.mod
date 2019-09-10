@@ -13,7 +13,9 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/onsi/gomega v1.6.0 // indirect
 	github.com/sethvargo/go-password v0.1.2
+	github.com/square/go-jose v2.3.1+incompatible
 	github.com/stretchr/testify v1.3.0
 	github.com/ybbus/jsonrpc v2.1.2+incompatible
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+	gopkg.in/square/go-jose.v2 v2.3.1
 )

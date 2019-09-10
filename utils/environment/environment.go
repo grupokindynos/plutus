@@ -5,7 +5,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
+	"encoding/asn1"
+	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -25,13 +28,19 @@ import (
 )
 
 type EnvironmentVars struct {
-	HerokuUsername string
-	HerokuPassword string
-	AuthUsername   string
-	AuthPassword   string
-	GinMode        string
-	KeyPassword    string
-	CoinsVars      []CoinVar
+	HerokuUsername  string
+	HerokuPassword  string
+	AuthUsername    string
+	AuthPassword    string
+	GinMode         string
+	KeyPassword     string
+	TychePubKey     string
+	TychePrivKey    string
+	AdrestiaPubKey  string
+	AdrestiaPrivKey string
+	PlutusPubKey    string
+	PlutusPrivKey   string
+	CoinsVars       []CoinVar
 }
 
 func (ev *EnvironmentVars) CheckVars() error {
@@ -69,7 +78,16 @@ func (ev *EnvironmentVars) ToString() string {
 		"KEY_PASSWORD=" + ev.KeyPassword + "\n" +
 		"GIN_MODE=" + ev.GinMode + "\n" +
 		"HEROKU_USERNAME=" + ev.HerokuUsername + "\n" +
-		"HEROKU_PASSWORD=" + ev.HerokuPassword + "\n"
+		"HEROKU_PASSWORD=" + ev.HerokuPassword + "\n" +
+		"TYCHE_PUBLIC_KEY=" + ev.TychePubKey + "\n" +
+		// TODO remove
+		"TYCHE_PRIVATE_KEY=" + ev.TychePrivKey + "\n" +
+		"ADRESTIA_PUBLIC_KEY=" + ev.AdrestiaPubKey + "\n" +
+		// TODO remove
+		"ADRESTIA_PRIVATE_KEY=" + ev.AdrestiaPrivKey + "\n" +
+		"PLUTUS_PRIVATE_KEY=" + ev.AdrestiaPrivKey + "\n" +
+		"PLUTUS_PUBLIC_KEY=" + ev.PlutusPubKey + "\n"
+
 	for _, coinVar := range ev.CoinsVars {
 		str += coinVar.ToString()
 	}
@@ -77,17 +95,16 @@ func (ev *EnvironmentVars) ToString() string {
 }
 
 type CoinVar struct {
-	Coin          string
-	RpcUser       string
-	RpcPass       string
-	RpcPort       string
-	SshUser       string
-	SshHost       string
-	SshPrivKey    string
-	SshPubKey     string
-	SshPort       string
-	ExchangeAddrs string
-	ColdAddrs     string
+	Coin       string
+	RpcUser    string
+	RpcPass    string
+	RpcPort    string
+	SshUser    string
+	SshHost    string
+	SshPrivKey string
+	SshPubKey  string
+	SshPort    string
+	ColdAddrs  string
 }
 
 func (cv *CoinVar) CheckVars() error {
@@ -115,9 +132,6 @@ func (cv *CoinVar) CheckVars() error {
 	if cv.SshPort == "" {
 		return errors.New("missing ssh port for " + cv.Coin)
 	}
-	if cv.ExchangeAddrs == "" {
-		return errors.New("missing exchange address for " + cv.Coin)
-	}
 	if cv.ColdAddrs == "" {
 		return errors.New("missing cold address for " + cv.Coin)
 	}
@@ -133,7 +147,6 @@ func (cv *CoinVar) ToString() string {
 		strings.ToUpper(cv.Coin) + "_IP=" + cv.SshHost + "\n" +
 		strings.ToUpper(cv.Coin) + "_SSH_PRIVKEY=" + cv.SshPrivKey + "\n" +
 		strings.ToUpper(cv.Coin) + "_SSH_PORT=" + cv.SshPort + "\n" +
-		strings.ToUpper(cv.Coin) + "_EXCHANGE_ADDRESS=" + cv.ExchangeAddrs + "\n" +
 		strings.ToUpper(cv.Coin) + "_COLD_ADDRESS=" + cv.ColdAddrs + "\n"
 	return str
 }
@@ -207,10 +220,14 @@ func main() {
 	log.Println("Updating heroku deployment variables...")
 	// Create environment map
 	envMap := map[string]*string{
-		"AUTH_PASSWORD": &NewVars.AuthPassword,
-		"AUTH_USERNAME": &NewVars.AuthUsername,
-		"KEY_PASSWORD":  &NewVars.KeyPassword,
-		"GIN_MODE":      &NewVars.GinMode,
+		"AUTH_PASSWORD":       &NewVars.AuthPassword,
+		"AUTH_USERNAME":       &NewVars.AuthUsername,
+		"KEY_PASSWORD":        &NewVars.KeyPassword,
+		"TYCHE_PUBLIC_KEY":    &NewVars.TychePubKey,
+		"ADRESTIA_PUBLIC_KEY": &NewVars.AdrestiaPubKey,
+		"PLUTUS_PUBLIC_KEY":   &NewVars.PlutusPubKey,
+		"PLUTUS_PRIVATE_KEY":  &NewVars.PlutusPrivKey,
+		"GIN_MODE":            &NewVars.GinMode,
 	}
 	// First update main variables
 	log.Println("Updating main heroku deployment variables...")
@@ -229,37 +246,49 @@ func main() {
 		coinVars[strings.ToUpper(env.Coin)+"_SSH_PORT"] = &env.SshPort
 		coinVars[strings.ToUpper(env.Coin)+"_SSH_PRIVKEY"] = &env.SshPrivKey
 		coinVars[strings.ToUpper(env.Coin)+"_COLD_ADDRESS"] = &env.ColdAddrs
-		coinVars[strings.ToUpper(env.Coin)+"_EXCHANGE_ADDRESS"] = &env.ExchangeAddrs
 		_, err := h.ConfigVarUpdate(context.Background(), "plutus-wallets", coinVars)
 		if err != nil {
 			panic("critical error, unable to update heroku variables")
 		}
 	}
-	plutusAccess := map[string]*string{
-		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
-		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
-	}
 	log.Println("Updating Plutus access to other microservices...")
 	// Here we update plutus access to hestia microservice
 	log.Println("Updating Plutus access to Hestia")
-	_, err = h.ConfigVarUpdate(context.Background(), "hestia-database", plutusAccess)
+	hestiaAccess := map[string]*string{
+		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
+		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
+	}
+	_, err = h.ConfigVarUpdate(context.Background(), "hestia-database", hestiaAccess)
 	if err != nil {
 		panic("critical error, unable to update heroku variables")
 	}
-	/*
+	log.Println("Updating Plutus access to Tyche")
+	tycheAccess := map[string]*string{
+		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
+		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
+		"TYCHE_PRIV_KEY":       &NewVars.TychePrivKey,
+		"TYCHE_PUBLIC_KEY":     &NewVars.TychePubKey,
+		"ADRESTIA_PUBLIC_KEY":  &NewVars.AdrestiaPubKey,
+		"PLUTUS_PUBLIC_KEY":    &NewVars.PlutusPubKey,
+	}
+	_, err = h.ConfigVarUpdate(context.Background(), "tyche-shift", tycheAccess)
+	if err != nil {
+		panic("critical error, unable to update heroku variables")
+	}
 
-		// Here we update plutus access to shift microservice
-		log.Println("Updating Plutus access to Shift")
-		_, err = h.ConfigVarUpdate(context.Background(), "MISSING_NAME", plutusAccess)
-		if err != nil {
-			panic("critical error, unable to update heroku variables")
-		}
-		// Here we update plutus access to adrestia microservice
-		log.Println("Updating Plutus access to Adrestria")
-		_, err = h.ConfigVarUpdate(context.Background(), "MISSING_NAME", plutusAccess)
-		if err != nil {
-			panic("critical error, unable to update heroku variables")
-		}*/
+	log.Println("Updating Plutus access to Adrestia")
+	addrestiaAccess := map[string]*string{
+		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
+		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
+		"ADRESTIA_PRIV_KEY":    &NewVars.AdrestiaPrivKey,
+		"ADRESTIA_PUBLIC_KEY":  &NewVars.AdrestiaPubKey,
+		"TYCHE_PUBLIC_KEY":     &NewVars.TychePubKey,
+		"PLUTUS_PUBLIC_KEY":    &NewVars.PlutusPubKey,
+	}
+	_, err = h.ConfigVarUpdate(context.Background(), "adrestia-exchanges", addrestiaAccess)
+	if err != nil {
+		panic("critical error, unable to update heroku variables")
+	}
 
 	// Dump new keys to .env file
 	err = saveNewVars()
@@ -313,17 +342,16 @@ func getOldVars() (EnvironmentVars, error) {
 	}
 	for key := range coinfactory.Coins {
 		coinVars := CoinVar{
-			Coin:          strings.ToUpper(key),
-			RpcUser:       os.Getenv(strings.ToUpper(key) + "_RPC_USER"),
-			RpcPass:       os.Getenv(strings.ToUpper(key) + "_RPC_PASS"),
-			RpcPort:       os.Getenv(strings.ToUpper(key) + "_RPC_PORT"),
-			SshUser:       os.Getenv(strings.ToUpper(key) + "_SSH_USER"),
-			SshPrivKey:    os.Getenv(strings.ToUpper(key) + "_SSH_PRIVKEY"),
-			SshPubKey:     "",
-			SshPort:       os.Getenv(strings.ToUpper(key) + "_SSH_PORT"),
-			SshHost:       os.Getenv(strings.ToUpper(key) + "_IP"),
-			ExchangeAddrs: os.Getenv(strings.ToUpper(key) + "_EXCHANGE_ADDRESS"),
-			ColdAddrs:     os.Getenv(strings.ToUpper(key) + "_COLD_ADDRESS"),
+			Coin:       strings.ToUpper(key),
+			RpcUser:    os.Getenv(strings.ToUpper(key) + "_RPC_USER"),
+			RpcPass:    os.Getenv(strings.ToUpper(key) + "_RPC_PASS"),
+			RpcPort:    os.Getenv(strings.ToUpper(key) + "_RPC_PORT"),
+			SshUser:    os.Getenv(strings.ToUpper(key) + "_SSH_USER"),
+			SshPrivKey: os.Getenv(strings.ToUpper(key) + "_SSH_PRIVKEY"),
+			SshPubKey:  "",
+			SshPort:    os.Getenv(strings.ToUpper(key) + "_SSH_PORT"),
+			SshHost:    os.Getenv(strings.ToUpper(key) + "_IP"),
+			ColdAddrs:  os.Getenv(strings.ToUpper(key) + "_COLD_ADDRESS"),
 		}
 		Vars.CoinsVars = append(Vars.CoinsVars, coinVars)
 	}
@@ -335,15 +363,38 @@ func genNewVars() (EnvironmentVars, error) {
 	newAuthUsername := generateRandomPassword(128)
 	newAuthPassword := generateRandomPassword(128)
 	newDecryptionKey := generateRandomPassword(32)
-
+	newTychePair, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		panic(err)
+	}
+	tychePubKeyBytes, _ := asn1.Marshal(newTychePair.PublicKey)
+	tychePrivKeyBytes := x509.MarshalPKCS1PrivateKey(newTychePair)
+	newAddrestiaKeyPair, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		panic(err)
+	}
+	addrestiaPubKeyBytes, _ := asn1.Marshal(newAddrestiaKeyPair.PublicKey)
+	addrestiaPrivKeyBytes := x509.MarshalPKCS1PrivateKey(newAddrestiaKeyPair)
+	newPlutusKeyPair, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		panic(err)
+	}
+	plutusPubKeyBytes, _ := asn1.Marshal(newAddrestiaKeyPair.PublicKey)
+	plutusPrivKeyBytes := x509.MarshalPKCS1PrivateKey(newPlutusKeyPair)
 	Vars := EnvironmentVars{
-		HerokuUsername: os.Getenv("HEROKU_USERNAME"),
-		HerokuPassword: os.Getenv("HEROKU_PASSWORD"),
-		AuthUsername:   newAuthUsername,
-		AuthPassword:   newAuthPassword,
-		GinMode:        os.Getenv("GIN_MODE"),
-		KeyPassword:    newDecryptionKey,
-		CoinsVars:      nil,
+		HerokuUsername:  os.Getenv("HEROKU_USERNAME"),
+		HerokuPassword:  os.Getenv("HEROKU_PASSWORD"),
+		AuthUsername:    newAuthUsername,
+		AuthPassword:    newAuthPassword,
+		GinMode:         os.Getenv("GIN_MODE"),
+		KeyPassword:     newDecryptionKey,
+		TychePrivKey:    base64.StdEncoding.EncodeToString(tychePrivKeyBytes),
+		TychePubKey:     base64.StdEncoding.EncodeToString(tychePubKeyBytes),
+		AdrestiaPrivKey: base64.StdEncoding.EncodeToString(addrestiaPrivKeyBytes),
+		AdrestiaPubKey:  base64.StdEncoding.EncodeToString(addrestiaPubKeyBytes),
+		PlutusPrivKey:   base64.StdEncoding.EncodeToString(plutusPrivKeyBytes),
+		PlutusPubKey:    base64.StdEncoding.EncodeToString(plutusPubKeyBytes),
+		CoinsVars:       nil,
 	}
 	for key := range coinfactory.Coins {
 		log.Println("Creating vars for " + strings.ToUpper(key))
@@ -353,21 +404,20 @@ func genNewVars() (EnvironmentVars, error) {
 			panic(err)
 		}
 		coinVars := CoinVar{
-			Coin:          strings.ToUpper(key),
-			RpcUser:       os.Getenv(strings.ToUpper(key) + "_RPC_USER"),
-			RpcPass:       os.Getenv(strings.ToUpper(key) + "_RPC_PASS"),
-			RpcPort:       os.Getenv(strings.ToUpper(key) + "_RPC_PORT"),
-			SshUser:       os.Getenv(strings.ToUpper(key) + "_SSH_USER"),
-			SshPrivKey:    encryptedPrivKey,
-			SshPubKey:     string(keyPair.Public),
-			SshPort:       os.Getenv(strings.ToUpper(key) + "_SSH_PORT"),
-			SshHost:       os.Getenv(strings.ToUpper(key) + "_IP"),
-			ExchangeAddrs: os.Getenv(strings.ToUpper(key) + "_EXCHANGE_ADDRESS"),
-			ColdAddrs:     os.Getenv(strings.ToUpper(key) + "_COLD_ADDRESS"),
+			Coin:       strings.ToUpper(key),
+			RpcUser:    os.Getenv(strings.ToUpper(key) + "_RPC_USER"),
+			RpcPass:    os.Getenv(strings.ToUpper(key) + "_RPC_PASS"),
+			RpcPort:    os.Getenv(strings.ToUpper(key) + "_RPC_PORT"),
+			SshUser:    os.Getenv(strings.ToUpper(key) + "_SSH_USER"),
+			SshPrivKey: encryptedPrivKey,
+			SshPubKey:  string(keyPair.Public),
+			SshPort:    os.Getenv(strings.ToUpper(key) + "_SSH_PORT"),
+			SshHost:    os.Getenv(strings.ToUpper(key) + "_IP"),
+			ColdAddrs:  os.Getenv(strings.ToUpper(key) + "_COLD_ADDRESS"),
 		}
 		Vars.CoinsVars = append(Vars.CoinsVars, coinVars)
 	}
-	err := Vars.CheckVars()
+	err = Vars.CheckVars()
 	return Vars, err
 }
 
@@ -411,11 +461,11 @@ func generatePrivateKey() (*ecdsa.PrivateKey, error) {
 }
 
 func generatePublicKey(privatekey *ecdsa.PublicKey) ([]byte, error) {
-	publicRsaKey, err := ssh.NewPublicKey(privatekey)
+	publicKey, err := ssh.NewPublicKey(privatekey)
 	if err != nil {
 		return nil, err
 	}
-	pubKeyBytes := ssh.MarshalAuthorizedKey(publicRsaKey)
+	pubKeyBytes := ssh.MarshalAuthorizedKey(publicKey)
 	return pubKeyBytes, nil
 }
 

@@ -3,14 +3,18 @@ package controllers
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/plutus/config"
 	"github.com/grupokindynos/plutus/models/blockbook"
 	coinfactory "github.com/grupokindynos/plutus/models/coin-factory"
+	"github.com/grupokindynos/plutus/models/common"
 	"github.com/grupokindynos/plutus/models/responses"
 	"github.com/grupokindynos/plutus/models/rpc"
+	"github.com/grupokindynos/plutus/utils/jws"
 	"github.com/ybbus/jsonrpc"
 	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -117,12 +121,17 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		return
 	}
 	address, err := res.GetString()
-	addressRes := responses.NewAddress{Address:address}
+	addressRes := responses.NewAddress{Address: address}
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	config.GlobalResponse(addressRes, err, c)
+	encodedRes, err := jws.EncodeJWS(addressRes, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	config.GlobalResponse(encodedRes, nil, c)
 	return
 }
 
@@ -177,8 +186,24 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 }
 
 func (w *WalletController) SendToAddress(c *gin.Context) {
-	coin := c.Param("coin")
-	coinConfig, err := coinfactory.GetCoin(coin)
+	var BodyReq common.BodyReq
+	err := c.BindJSON(&BodyReq)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	var SendToAddressData common.SendAddressBodyReq
+	err = json.Unmarshal(decodedTokenBytes, &SendToAddressData)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -188,28 +213,34 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	address := c.Param("address")
-	if address == "" {
-		config.GlobalResponse(nil, config.ErrorNoAddressSpecified, c)
-		return
-	}
-	amount, ok := c.GetQuery("amount")
-	if !ok {
-		config.GlobalResponse(nil, config.ErrorNoAmountSpecified, c)
-		return
-	}
-	txid, err := w.Send(coinConfig, address, amount)
+	/*txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
 		return
-	}
-	config.GlobalResponse(txid, nil, c)
+	}*/
+	config.GlobalResponse("", nil, c)
 	return
 }
 
 func (w *WalletController) SendToColdStorage(c *gin.Context) {
-	coin := c.Param("coin")
-	coinConfig, err := coinfactory.GetCoin(coin)
+	var BodyReq common.BodyReq
+	err := c.BindJSON(&BodyReq)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	var SendToAddressData common.SendAddressInternalBodyReq
+	err = json.Unmarshal(decodedTokenBytes, &SendToAddressData)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -219,12 +250,7 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	amount, ok := c.GetQuery("amount")
-	if !ok {
-		config.GlobalResponse(nil, config.ErrorNoAmountSpecified, c)
-		return
-	}
-	txid, err := w.Send(coinConfig, coinConfig.ColdAddress, amount)
+	txid, err := w.Send(coinConfig, coinConfig.ColdAddress, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
 		return
@@ -234,8 +260,24 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 }
 
 func (w *WalletController) SendToExchange(c *gin.Context) {
-	coin := c.Param("coin")
-	coinConfig, err := coinfactory.GetCoin(coin)
+	var BodyReq common.BodyReq
+	err := c.BindJSON(&BodyReq)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	var SendToAddressData common.SendAddressBodyReq
+	err = json.Unmarshal(decodedTokenBytes, &SendToAddressData)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -245,12 +287,7 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	amount, ok := c.GetQuery("amount")
-	if !ok {
-		config.GlobalResponse(nil, config.ErrorNoAmountSpecified, c)
-		return
-	}
-	txid, err := w.Send(coinConfig, coinConfig.ExchangeAddress, amount)
+	txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
 		return
@@ -260,9 +297,24 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 }
 
 func (w *WalletController) ValidateAddress(c *gin.Context) {
-	coin := c.Param("coin")
-	address := c.Param("address")
-	coinConfig, err := coinfactory.GetCoin(coin)
+	var BodyReq common.BodyReq
+	err := c.BindJSON(&BodyReq)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	var ValidateAddressData common.AddressValidationBodyReq
+	err = json.Unmarshal(decodedTokenBytes, &ValidateAddressData)
+	if err != nil {
+		config.GlobalResponse(nil, err, c)
+		return
+	}
+	coinConfig, err := coinfactory.GetCoin(ValidateAddressData.Coin)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -273,7 +325,7 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 		return
 	}
 	rpcClient := w.RPCClient(coinConfig)
-	res, err := rpcClient.Call(coinConfig.RpcMethods.ValidateAddress, jsonrpc.Params(address))
+	res, err := rpcClient.Call(coinConfig.RpcMethods.ValidateAddress, jsonrpc.Params(ValidateAddressData.Address))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToValidateAddress, c)
 		return
@@ -287,7 +339,12 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 	response := responses.Address{
 		Valid: AddressValidation.Ismine,
 	}
-	config.GlobalResponse(response, nil, c)
+	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		config.GlobalResponse(encodedRes, err, c)
+		return
+	}
+	config.GlobalResponse(encodedRes, nil, c)
 	return
 }
 
