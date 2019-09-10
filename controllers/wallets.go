@@ -117,11 +117,12 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		return
 	}
 	address, err := res.GetString()
+	addressRes := responses.NewAddress{Address:address}
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	config.GlobalResponse(address, err, c)
+	config.GlobalResponse(addressRes, err, c)
 	return
 }
 

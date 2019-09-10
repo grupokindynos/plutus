@@ -26,3 +26,7 @@ type Status struct {
 type Address struct {
 	Valid bool `json:"valid"`
 }
+
+type NewAddress struct {
+	Address string `json:"address"`
+}
