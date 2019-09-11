@@ -80,11 +80,7 @@ func (ev *EnvironmentVars) ToString() string {
 		"HEROKU_USERNAME=" + ev.HerokuUsername + "\n" +
 		"HEROKU_PASSWORD=" + ev.HerokuPassword + "\n" +
 		"TYCHE_PUBLIC_KEY=" + ev.TychePubKey + "\n" +
-		// TODO remove
-		"TYCHE_PRIVATE_KEY=" + ev.TychePrivKey + "\n" +
 		"ADRESTIA_PUBLIC_KEY=" + ev.AdrestiaPubKey + "\n" +
-		// TODO remove
-		"ADRESTIA_PRIVATE_KEY=" + ev.AdrestiaPrivKey + "\n" +
 		"PLUTUS_PRIVATE_KEY=" + ev.AdrestiaPrivKey + "\n" +
 		"PLUTUS_PUBLIC_KEY=" + ev.PlutusPubKey + "\n"
 

@@ -131,6 +131,13 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
+	newReq := common.SendAddressBodyReq{
+		Address: address,
+		Coin:    "polis",
+		Amount: 0.1,
+	}
+	newReqEncode, _ :=jws.EncodeJWS(newReq, os.Getenv("TYCHE_PRIVATE_KEY"))
+	fmt.Println(newReqEncode)
 	config.GlobalResponse(encodedRes, nil, c)
 	return
 }
@@ -213,12 +220,18 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	/*txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
+	txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
 		return
-	}*/
-	config.GlobalResponse("", nil, c)
+	}
+	response := common.ResponseTxid{Txid:txid}
+	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		config.GlobalResponse(encodedRes, err, c)
+		return
+	}
+	config.GlobalResponse(txid, nil, c)
 	return
 }
 
@@ -253,6 +266,12 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 	txid, err := w.Send(coinConfig, coinConfig.ColdAddress, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
+		return
+	}
+	response := common.ResponseTxid{Txid:txid}
+	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		config.GlobalResponse(encodedRes, err, c)
 		return
 	}
 	config.GlobalResponse(txid, nil, c)
@@ -290,6 +309,12 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 	txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
+		return
+	}
+	response := common.ResponseTxid{Txid:txid}
+	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		config.GlobalResponse(encodedRes, err, c)
 		return
 	}
 	config.GlobalResponse(txid, nil, c)
