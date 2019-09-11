@@ -218,7 +218,7 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
 		return
 	}
-	response := common.ResponseTxid{Txid:txid}
+	response := common.ResponseTxid{Txid: txid}
 	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		config.GlobalResponse(encodedRes, err, c)
@@ -261,7 +261,7 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
 		return
 	}
-	response := common.ResponseTxid{Txid:txid}
+	response := common.ResponseTxid{Txid: txid}
 	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		config.GlobalResponse(encodedRes, err, c)
@@ -304,7 +304,7 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
 		return
 	}
-	response := common.ResponseTxid{Txid:txid}
+	response := common.ResponseTxid{Txid: txid}
 	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		config.GlobalResponse(encodedRes, err, c)

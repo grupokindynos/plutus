@@ -54,10 +54,7 @@ func TestCheckCoinConfigs(t *testing.T) {
 	err = CheckCoinConfigs(coin)
 	assert.NotNil(t, err)
 	assert.Equal(t, config.ErrorNoExchangeAddress, err)
-	coin.ExchangeAddress = "RandomAddr"
 	err = CheckCoinConfigs(coin)
-	assert.NotNil(t, err)
-	assert.Equal(t, config.ErrorNoColdAddress, err)
 	coin.ColdAddress = "RandomAddr"
 	err = CheckCoinConfigs(coin)
 	assert.Nil(t, err)
