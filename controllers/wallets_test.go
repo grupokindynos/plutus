@@ -131,6 +131,7 @@ func TestWalletController_GetNodeStatus2(t *testing.T) {
 	assert.Equal(t, float64(-1), response["status"])
 }
 
+// TODO migrate tests
 /*func TestWalletController_SendToAddress(t *testing.T) {
 	// Error cases
 	resp := httptest.NewRecorder()
