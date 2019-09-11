@@ -131,13 +131,6 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	newReq := common.SendAddressBodyReq{
-		Address: address,
-		Coin:    "polis",
-		Amount: 0.1,
-	}
-	newReqEncode, _ :=jws.EncodeJWS(newReq, os.Getenv("TYCHE_PRIVATE_KEY"))
-	fmt.Println(newReqEncode)
 	config.GlobalResponse(encodedRes, nil, c)
 	return
 }
@@ -231,7 +224,7 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		config.GlobalResponse(encodedRes, err, c)
 		return
 	}
-	config.GlobalResponse(txid, nil, c)
+	config.GlobalResponse(encodedRes, nil, c)
 	return
 }
 
@@ -274,7 +267,7 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 		config.GlobalResponse(encodedRes, err, c)
 		return
 	}
-	config.GlobalResponse(txid, nil, c)
+	config.GlobalResponse(encodedRes, nil, c)
 	return
 }
 
@@ -317,7 +310,7 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 		config.GlobalResponse(encodedRes, err, c)
 		return
 	}
-	config.GlobalResponse(txid, nil, c)
+	config.GlobalResponse(encodedRes, nil, c)
 	return
 }
 
