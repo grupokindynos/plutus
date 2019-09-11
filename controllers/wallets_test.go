@@ -131,7 +131,7 @@ func TestWalletController_GetNodeStatus2(t *testing.T) {
 	assert.Equal(t, float64(-1), response["status"])
 }
 
-func TestWalletController_SendToAddress(t *testing.T) {
+/*func TestWalletController_SendToAddress(t *testing.T) {
 	// Error cases
 	resp := httptest.NewRecorder()
 	gin.SetMode(gin.TestMode)
@@ -241,7 +241,7 @@ func TestWalletController_ValidateAddress2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, config.ErrorNoRpcUserProvided.Error(), response["error"])
 	assert.Equal(t, float64(-1), response["status"])
-}
+}*/
 
 func TestWalletController_GetTx(t *testing.T) {
 	// Error cases
