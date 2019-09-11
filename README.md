@@ -86,7 +86,6 @@ Currently every coin uses 9 variables following this structure:
 {Coin_ticker_uppercase}_SSH_USER=
 {Coin_ticker_uppercase}_SSH_PORT=
 {Coin_ticker_uppercase}_SSH_PRIVKEY=
-{Coin_ticker_uppercase}_EXCHANGE_ADDRESS=
 {Coin_ticker_uppercase}_COLD_ADDRESS=
 ```
 
