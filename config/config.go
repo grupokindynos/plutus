@@ -30,10 +30,7 @@ var (
 	ErrorNoHostUserProvided      = errors.New("missing host user")
 	ErrorNoHostPortProvided      = errors.New("missing host port")
 	ErrorExternalStatusError     = errors.New("unable to get external source status")
-	ErrorNoAmountSpecified       = errors.New("missing amount specification")
-	ErrorNoAddressSpecified      = errors.New("missing address specification")
 	ErrorNoColdAddress           = errors.New("missing cold address to send")
-	ErrorNoExchangeAddress       = errors.New("missing exchange address to send")
 	ErrorUnableToSend            = errors.New("unable to send transaction")
 	ErrorUnableToValidateAddress = errors.New("unable to validate address")
 	HttpClient                   = &http.Client{

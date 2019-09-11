@@ -53,11 +53,8 @@ func TestCheckCoinConfigs(t *testing.T) {
 	coin.PrivKey = "mockPrivKey"
 	err = CheckCoinConfigs(coin)
 	assert.NotNil(t, err)
-	assert.Equal(t, config.ErrorNoExchangeAddress, err)
-	coin.ExchangeAddress = "RandomAddr"
-	err = CheckCoinConfigs(coin)
-	assert.NotNil(t, err)
 	assert.Equal(t, config.ErrorNoColdAddress, err)
+	err = CheckCoinConfigs(coin)
 	coin.ColdAddress = "RandomAddr"
 	err = CheckCoinConfigs(coin)
 	assert.Nil(t, err)

@@ -19,3 +19,7 @@ type SendAddressInternalBodyReq struct {
 	Coin   string  `json:"coin"`
 	Amount float64 `json:"amount"`
 }
+
+type ResponseTxid struct {
+	Txid string `json:"txid"`
+}
