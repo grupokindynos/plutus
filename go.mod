@@ -1,6 +1,6 @@
 module github.com/grupokindynos/plutus
 
-go 1.12
+go 1.13
 
 require (
 	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
@@ -9,13 +9,11 @@ require (
 	github.com/gin-gonic/gin v1.4.0
 	github.com/gliderlabs/ssh v0.2.2
 	github.com/heroku/heroku-go/v5 v5.1.0
-	github.com/heroku/x v0.0.1
+	github.com/heroku/x v0.0.9
 	github.com/joho/godotenv v1.3.0
-	github.com/onsi/gomega v1.6.0 // indirect
 	github.com/sethvargo/go-password v0.1.2
-	github.com/square/go-jose v2.3.1+incompatible
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.4.0
 	github.com/ybbus/jsonrpc v2.1.2+incompatible
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7
 	gopkg.in/square/go-jose.v2 v2.3.1
 )

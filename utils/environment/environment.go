@@ -38,6 +38,8 @@ type EnvironmentVars struct {
 	TychePrivKey    string
 	AdrestiaPubKey  string
 	AdrestiaPrivKey string
+	HestiaPubKey    string
+	HestiaPrivKey   string
 	PlutusPubKey    string
 	PlutusPrivKey   string
 	CoinsVars       []CoinVar
@@ -81,6 +83,7 @@ func (ev *EnvironmentVars) ToString() string {
 		"HEROKU_PASSWORD=" + ev.HerokuPassword + "\n" +
 		"TYCHE_PUBLIC_KEY=" + ev.TychePubKey + "\n" +
 		"ADRESTIA_PUBLIC_KEY=" + ev.AdrestiaPubKey + "\n" +
+		"HESTIA_PUBLIC_KEY=" + ev.HestiaPubKey + "\n" +
 		"PLUTUS_PRIVATE_KEY=" + ev.AdrestiaPrivKey + "\n" +
 		"PLUTUS_PUBLIC_KEY=" + ev.PlutusPubKey + "\n"
 
@@ -221,6 +224,7 @@ func main() {
 		"KEY_PASSWORD":        &NewVars.KeyPassword,
 		"TYCHE_PUBLIC_KEY":    &NewVars.TychePubKey,
 		"ADRESTIA_PUBLIC_KEY": &NewVars.AdrestiaPubKey,
+		"HESTIA_PUBLIC_KEY":   &NewVars.HestiaPubKey,
 		"PLUTUS_PUBLIC_KEY":   &NewVars.PlutusPubKey,
 		"PLUTUS_PRIVATE_KEY":  &NewVars.PlutusPrivKey,
 		"GIN_MODE":            &NewVars.GinMode,
@@ -248,16 +252,8 @@ func main() {
 		}
 	}
 	log.Println("Updating Plutus access to other microservices...")
-	// Here we update plutus access to hestia microservice
-	log.Println("Updating Plutus access to Hestia")
-	hestiaAccess := map[string]*string{
-		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
-		"PLUTUS_AUTH_PASSWORD": &NewVars.AuthPassword,
-	}
-	_, err = h.ConfigVarUpdate(context.Background(), "hestia-database", hestiaAccess)
-	if err != nil {
-		panic("critical error, unable to update heroku variables")
-	}
+
+	// TYCHE
 	log.Println("Updating Plutus access to Tyche")
 	tycheAccess := map[string]*string{
 		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
@@ -265,6 +261,7 @@ func main() {
 		"TYCHE_PRIV_KEY":       &NewVars.TychePrivKey,
 		"TYCHE_PUBLIC_KEY":     &NewVars.TychePubKey,
 		"ADRESTIA_PUBLIC_KEY":  &NewVars.AdrestiaPubKey,
+		"HESTIA_PUBLIC_KEY":    &NewVars.HestiaPubKey,
 		"PLUTUS_PUBLIC_KEY":    &NewVars.PlutusPubKey,
 	}
 	_, err = h.ConfigVarUpdate(context.Background(), "tyche-shift", tycheAccess)
@@ -272,6 +269,7 @@ func main() {
 		panic("critical error, unable to update heroku variables")
 	}
 
+	// ADRESTIA
 	log.Println("Updating Plutus access to Adrestia")
 	addrestiaAccess := map[string]*string{
 		"PLUTUS_AUTH_USERNAME": &NewVars.AuthUsername,
@@ -279,9 +277,24 @@ func main() {
 		"ADRESTIA_PRIV_KEY":    &NewVars.AdrestiaPrivKey,
 		"ADRESTIA_PUBLIC_KEY":  &NewVars.AdrestiaPubKey,
 		"TYCHE_PUBLIC_KEY":     &NewVars.TychePubKey,
+		"HESTIA_PUBLIC_KEY":    &NewVars.HestiaPubKey,
 		"PLUTUS_PUBLIC_KEY":    &NewVars.PlutusPubKey,
 	}
 	_, err = h.ConfigVarUpdate(context.Background(), "adrestia-exchanges", addrestiaAccess)
+	if err != nil {
+		panic("critical error, unable to update heroku variables")
+	}
+
+	// HESTIA
+	log.Println("Updating Hestia keys")
+	hestiaAccess := map[string]*string{
+		"ADRESTIA_PUBLIC_KEY": &NewVars.AdrestiaPubKey,
+		"TYCHE_PUBLIC_KEY":    &NewVars.TychePubKey,
+		"HESTIA_PUBLIC_KEY":   &NewVars.HestiaPubKey,
+		"HESTIA_PRIVATE_KEY":  &NewVars.HestiaPrivKey,
+		"PLUTUS_PUBLIC_KEY":   &NewVars.PlutusPubKey,
+	}
+	_, err = h.ConfigVarUpdate(context.Background(), "hestia-database", hestiaAccess)
 	if err != nil {
 		panic("critical error, unable to update heroku variables")
 	}
@@ -359,23 +372,36 @@ func genNewVars() (EnvironmentVars, error) {
 	newAuthUsername := generateRandomPassword(128)
 	newAuthPassword := generateRandomPassword(128)
 	newDecryptionKey := generateRandomPassword(32)
+	// Tyche KeyPair
 	newTychePair, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		panic(err)
 	}
 	tychePubKeyBytes, _ := asn1.Marshal(newTychePair.PublicKey)
 	tychePrivKeyBytes := x509.MarshalPKCS1PrivateKey(newTychePair)
-	newAddrestiaKeyPair, err := rsa.GenerateKey(rand.Reader, 4096)
+
+	// Adrestia KeyPair
+	newAdrestiaKeyPair, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		panic(err)
 	}
-	addrestiaPubKeyBytes, _ := asn1.Marshal(newAddrestiaKeyPair.PublicKey)
-	addrestiaPrivKeyBytes := x509.MarshalPKCS1PrivateKey(newAddrestiaKeyPair)
+	addrestiaPubKeyBytes, _ := asn1.Marshal(newAdrestiaKeyPair.PublicKey)
+	addrestiaPrivKeyBytes := x509.MarshalPKCS1PrivateKey(newAdrestiaKeyPair)
+
+	// Hestia KeyPair
+	newHestiaKeyPair, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		panic(err)
+	}
+	hestiaPubKeyBytes, _ := asn1.Marshal(newHestiaKeyPair.PublicKey)
+	hestiaPrivKeyBytes := x509.MarshalPKCS1PrivateKey(newHestiaKeyPair)
+
+	// Plutus KeyPair
 	newPlutusKeyPair, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		panic(err)
 	}
-	plutusPubKeyBytes, _ := asn1.Marshal(newAddrestiaKeyPair.PublicKey)
+	plutusPubKeyBytes, _ := asn1.Marshal(newPlutusKeyPair.PublicKey)
 	plutusPrivKeyBytes := x509.MarshalPKCS1PrivateKey(newPlutusKeyPair)
 	Vars := EnvironmentVars{
 		HerokuUsername:  os.Getenv("HEROKU_USERNAME"),
@@ -390,6 +416,8 @@ func genNewVars() (EnvironmentVars, error) {
 		AdrestiaPubKey:  base64.StdEncoding.EncodeToString(addrestiaPubKeyBytes),
 		PlutusPrivKey:   base64.StdEncoding.EncodeToString(plutusPrivKeyBytes),
 		PlutusPubKey:    base64.StdEncoding.EncodeToString(plutusPubKeyBytes),
+		HestiaPubKey:    base64.StdEncoding.EncodeToString(hestiaPubKeyBytes),
+		HestiaPrivKey: 	 base64.StdEncoding.EncodeToString(hestiaPrivKeyBytes),
 		CoinsVars:       nil,
 	}
 	for key := range coinfactory.Coins {
