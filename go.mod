@@ -3,17 +3,13 @@ module github.com/grupokindynos/plutus
 go 1.13
 
 require (
-	github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239 // indirect
-	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-gonic/gin v1.4.0
 	github.com/gliderlabs/ssh v0.2.2
-	github.com/heroku/heroku-go/v5 v5.1.0
+	github.com/grupokindynos/common v0.0.0-20190919161206-9f300a6316fe
 	github.com/heroku/x v0.0.9
 	github.com/joho/godotenv v1.3.0
-	github.com/sethvargo/go-password v0.1.2
 	github.com/stretchr/testify v1.4.0
 	github.com/ybbus/jsonrpc v2.1.2+incompatible
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7
-	gopkg.in/square/go-jose.v2 v2.3.1
 )

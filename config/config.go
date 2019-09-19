@@ -1,13 +1,10 @@
 package config
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/grupokindynos/common/aes"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"net"
@@ -22,15 +19,8 @@ var (
 	ErrorNoCoin                  = errors.New("coin not available")
 	ErrorRpcConnection           = errors.New("unable to perform rpc call")
 	ErrorRpcDeserialize          = errors.New("unable to deserialize rpc response")
-	ErrorNoAuthMethodProvided    = errors.New("missing authorization token")
 	ErrorNoRpcUserProvided       = errors.New("missing rpc username")
-	ErrorNoRpcPassProvided       = errors.New("missing rpc password")
-	ErrorNoRpcPortProvided       = errors.New("missing rpc port")
-	ErrorNoHostIPProvided        = errors.New("missing host ip")
-	ErrorNoHostUserProvided      = errors.New("missing host user")
-	ErrorNoHostPortProvided      = errors.New("missing host port")
 	ErrorExternalStatusError     = errors.New("unable to get external source status")
-	ErrorNoColdAddress           = errors.New("missing cold address to send")
 	ErrorUnableToSend            = errors.New("unable to send transaction")
 	ErrorUnableToValidateAddress = errors.New("unable to validate address")
 	HttpClient                   = &http.Client{
@@ -156,7 +146,7 @@ func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTu
 
 func PrivateKey(pvKeyString string) ssh.AuthMethod {
 	encryptionPass := []byte(os.Getenv("KEY_PASSWORD"))
-	decrypted, err := Decrypt(encryptionPass, pvKeyString)
+	decrypted, err := aes.Decrypt(encryptionPass, pvKeyString)
 	if err != nil {
 		return nil
 	}
@@ -176,41 +166,4 @@ func GlobalResponse(result interface{}, err error, c *gin.Context) *gin.Context 
 		c.JSON(200, gin.H{"data": result, "status": 1})
 	}
 	return c
-}
-
-func Encrypt(key []byte, message []byte) (encryptedMessage string, err error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return
-	}
-	cipherText := make([]byte, aes.BlockSize+len(message))
-	iv := cipherText[:aes.BlockSize]
-	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
-		return
-	}
-	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(cipherText[aes.BlockSize:], message)
-	encryptedMessage = base64.StdEncoding.EncodeToString(cipherText)
-	return
-}
-
-func Decrypt(key []byte, secureMessage string) (decodedMessage string, err error) {
-	cipherText, err := base64.StdEncoding.DecodeString(secureMessage)
-	if err != nil {
-		return
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return
-	}
-	if len(cipherText) < aes.BlockSize {
-		err = errors.New("ciphertext block size is too short")
-		return
-	}
-	iv := cipherText[:aes.BlockSize]
-	cipherText = cipherText[aes.BlockSize:]
-	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(cipherText, cipherText)
-	decodedMessage = string(cipherText)
-	return
 }

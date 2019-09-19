@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gliderlabs/ssh"
+	aesk "github.com/grupokindynos/common/aes"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"os"
@@ -28,7 +29,7 @@ func TestEncryptionError(t *testing.T) {
 	messageStr := "test message encryption"
 	// Key size 20
 	key := "12345678901112131415"
-	_, err := Encrypt([]byte(key), []byte(messageStr))
+	_, err := aesk.Encrypt([]byte(key), []byte(messageStr))
 	assert.NotNil(t, err)
 	assert.Equal(t, aes.KeySizeError(len(key)).Error(), err.Error())
 }
@@ -36,7 +37,7 @@ func TestEncryptionError(t *testing.T) {
 func TestDecryptionError(t *testing.T) {
 	messageEncrypted := "pGoO0Df5u2weI47b4bUUt0cWtULg46ctTbmMLibJ8SVxl16zA1xF"
 	key := "12345678901112131415"
-	_, err := Decrypt([]byte(key), messageEncrypted)
+	_, err := aesk.Decrypt([]byte(key), messageEncrypted)
 	assert.NotNil(t, err)
 	assert.Equal(t, aes.KeySizeError(len(key)).Error(), err.Error())
 }
@@ -44,9 +45,9 @@ func TestDecryptionError(t *testing.T) {
 func TestEncryption(t *testing.T) {
 	messageStr := "test message encryption"
 	key := "1234567890111213"
-	encryptedMsg, err := Encrypt([]byte(key), []byte(messageStr))
+	encryptedMsg, err := aesk.Encrypt([]byte(key), []byte(messageStr))
 	assert.Nil(t, err)
-	decryptedMsg, err := Decrypt([]byte(key), encryptedMsg)
+	decryptedMsg, err := aesk.Decrypt([]byte(key), encryptedMsg)
 	assert.Nil(t, err)
 	assert.Equal(t, decryptedMsg, messageStr)
 }
