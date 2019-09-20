@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/common/coin-factory"
+	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/grupokindynos/common/jws"
 	"github.com/grupokindynos/plutus/config"
 	"github.com/grupokindynos/plutus/models/blockbook"
@@ -29,7 +30,7 @@ func (w *WalletController) GetInfo(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
+	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -77,7 +78,7 @@ func (w *WalletController) GetWalletInfo(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
+	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -109,7 +110,7 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
+	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -142,7 +143,7 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
+	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -159,7 +160,7 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	externalRes, err := config.HttpClient.Get("https://" + coinConfig.ExternalSource + "/api")
+	externalRes, err := config.HttpClient.Get("https://" + coinConfig.BlockchainInfo.ExternalSource + "/api")
 	if err != nil {
 		config.GlobalResponse(nil, config.ErrorExternalStatusError, c)
 		return
@@ -208,7 +209,7 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
+	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -251,7 +252,7 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
+	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -294,7 +295,7 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
+	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -337,7 +338,7 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
+	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -374,7 +375,7 @@ func (w *WalletController) GetTx(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	err = coinfactory.CheckCoinConfigs(coinConfig)
+	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -389,9 +390,10 @@ func (w *WalletController) GetTx(c *gin.Context) {
 	return
 }
 
-func (w *WalletController) RPCClient(coinConfig *coinfactory.Coin) RPCClient {
-	hostStr := coinConfig.User + "@" + coinConfig.Host + ":" + coinConfig.Port
-	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(coinConfig.PrivKey), "localhost:"+coinConfig.RpcPort)
+func (w *WalletController) RPCClient(coinConfig *coins.Coin) RPCClient {
+	keys := coinConfig.Keys
+	hostStr := keys.User + "@" + keys.Host + ":" + keys.Port
+	tunnel := config.NewSSHTunnel(hostStr, config.PrivateKey(keys.PrivKey), "localhost:"+keys.RpcPort)
 	go func() {
 		_ = tunnel.Start()
 	}()
@@ -399,13 +401,13 @@ func (w *WalletController) RPCClient(coinConfig *coinfactory.Coin) RPCClient {
 	rpcClient := jsonrpc.NewClientWithOpts("http://"+tunnel.Local.String(), &jsonrpc.RPCClientOpts{
 		HTTPClient: config.HttpClient,
 		CustomHeaders: map[string]string{
-			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(coinConfig.RpcUser+":"+coinConfig.RpcPass)),
+			"Authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte(keys.RpcUser+":"+keys.RpcPass)),
 		},
 	})
 	return rpcClient
 }
 
-func (w *WalletController) Send(coinConfig *coinfactory.Coin, address string, amount string) (string, error) {
+func (w *WalletController) Send(coinConfig *coins.Coin, address string, amount string) (string, error) {
 	rpcClient := w.RPCClient(coinConfig)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.SendToAddress, jsonrpc.Params(address, amount))
 	if err != nil {
