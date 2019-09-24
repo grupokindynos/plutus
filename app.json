@@ -5,9 +5,17 @@
   "logo": "https://avatars0.githubusercontent.com/u/43501156?s=200&v=4",
   "keywords": ["golang", "REST api", "gin", "cryptocurrencies"],
   "env": {
-    "AUTH_USERNAME": { "description": "Username to authorize for requests"},
-    "AUTH_PASSWORD": { "description": "Password to authorize for requests"},
+    "PLUTUS_AUTH_USERNAME": { "description": "Username to authorize for requests"},
+    "PLUTUS_AUTH_PASSWORD": { "description": "Password to authorize for requests"},
+    "PLUTUS_PRIVATE_KEY": { "description":  "Plutus private key"},
+    "PLUTUS_PUBLIC_KEY": { "description":  "Plutus public key"},
     "KEY_PASSWORD": { "description": "Main password to decrypt AES encrypted private keys for ssh tunnel"},
+    "TYCHE_PUBLIC_KEY": { "description": "Tyche microservice public key"},
+    "LADON_PUBLIC_KEY": { "description": "Ladon microservice public key"},
+    "ADRESTIA_PUBLIC_KEY": { "description": "Adrestia microserrvice public key"},
+    "MASTER_PASSWORD": { "description": "Master encryption password for microservice communication"},
+
+
     "POLIS_IP": { "description": "IP of the hot-wallet server" },
     "POLIS_RPC_USER": { "description": "RPC username of the hot-wallet" },
     "POLIS_RPC_PASS": { "description": "RPC password of the hot-wallet" },
@@ -15,7 +23,6 @@
     "POLIS_SSH_USER": { "description": "Username for the ssh tunnel" },
     "POLIS_SSH_PORT": { "description": "SSH port" },
     "POLIS_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "POLIS_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "POLIS_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "DGB_IP": { "description": "IP of the hot-wallet server" },
@@ -25,7 +32,6 @@
     "DGB_SSH_USER": { "description": "Username for the ssh tunnel" },
     "DGB_SSH_PORT": { "description": "SSH port" },
     "DGB_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "DGB_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "DGB_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "XZC_IP": { "description": "IP of the hot-wallet server" },
@@ -35,7 +41,6 @@
     "XZC_SSH_USER": { "description": "Username for the ssh tunnel" },
     "XZC_SSH_PORT": { "description": "SSH port" },
     "XZC_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "XZC_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "XZC_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "LTC_IP": { "description": "IP of the hot-wallet server" },
@@ -45,7 +50,6 @@
     "LTC_SSH_USER": { "description": "Username for the ssh tunnel" },
     "LTC_SSH_PORT": { "description": "SSH port" },
     "LTC_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "LTC_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "LTC_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "XSG_IP": { "description": "IP of the hot-wallet server" },
@@ -55,7 +59,6 @@
     "XSG_SSH_USER": { "description": "Username for the ssh tunnel" },
     "XSG_SSH_PORT": { "description": "SSH port" },
     "XSG_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "XSG_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "XSG_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "DASH_IP": { "description": "IP of the hot-wallet server" },
@@ -65,7 +68,6 @@
     "DASH_SSH_USER": { "description": "Username for the ssh tunnel" },
     "DASH_SSH_PORT": { "description": "SSH port" },
     "DASH_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "DASH_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "DASH_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "GRS_IP": { "description": "IP of the hot-wallet server" },
@@ -75,7 +77,6 @@
     "GRS_SSH_USER": { "description": "Username for the ssh tunnel" },
     "GRS_SSH_PORT": { "description": "SSH port" },
     "GRS_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "GRS_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "GRS_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "BTC_IP": { "description": "IP of the hot-wallet server" },
@@ -85,7 +86,6 @@
     "BTC_SSH_USER": { "description": "Username for the ssh tunnel" },
     "BTC_SSH_PORT": { "description": "SSH port" },
     "BTC_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "BTC_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "BTC_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "COLX_IP": { "description": "IP of the hot-wallet server" },
@@ -95,7 +95,6 @@
     "COLX_SSH_USER": { "description": "Username for the ssh tunnel" },
     "COLX_SSH_PORT": { "description": "SSH port" },
     "COLX_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "COLX_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "COLX_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "ONION_IP": { "description": "IP of the hot-wallet server" },
@@ -105,7 +104,6 @@
     "ONION_SSH_USER": { "description": "Username for the ssh tunnel" },
     "ONION_SSH_PORT": { "description": "SSH port" },
     "ONION_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "ONION_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "ONION_COLD_ADDRESS": { "description": "Selected address for cold storage" },
 
     "MNP_IP": { "description": "IP of the hot-wallet server" },
@@ -115,15 +113,6 @@
     "MNP_SSH_USER": { "description": "Username for the ssh tunnel" },
     "MNP_SSH_PORT": { "description": "SSH port" },
     "MNP_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "MNP_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
     "MNP_COLD_ADDRESS": { "description": "Selected address for cold storage" },
-
-    "ETH_IP": { "description": "IP of the hot-wallet server" },
-    "ETH_RPC_PORT": { "description": "RPC port of the hot-wallet" },
-    "ETH_SSH_USER": { "description": "Username for the ssh tunnel" },
-    "ETH_SSH_PORT": { "description": "SSH port" },
-    "ETH_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "ETH_EXCHANGE_ADDRESS": { "description": "Selected exchange address for fast deposit" },
-    "ETH_COLD_ADDRESS": { "description": "Selected address for cold storage" }
   }
 }

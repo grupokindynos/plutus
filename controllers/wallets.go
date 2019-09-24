@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
-	"github.com/grupokindynos/common/jws"
+	"github.com/grupokindynos/common/jwt"
 	"github.com/grupokindynos/plutus/config"
 	"github.com/grupokindynos/plutus/models/blockbook"
 	"github.com/grupokindynos/plutus/models/common"
@@ -127,7 +127,7 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	encodedRes, err := jws.EncodeJWS(addressRes, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	encodedRes, err := jwt.EncodeJWS(addressRes, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -193,7 +193,7 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
+	decodedTokenBytes, err := jwt.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -220,7 +220,7 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		return
 	}
 	response := common.ResponseTxid{Txid: txid}
-	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	encodedRes, err := jwt.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		config.GlobalResponse(encodedRes, err, c)
 		return
@@ -236,7 +236,7 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
+	decodedTokenBytes, err := jwt.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -263,7 +263,7 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 		return
 	}
 	response := common.ResponseTxid{Txid: txid}
-	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	encodedRes, err := jwt.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		config.GlobalResponse(encodedRes, err, c)
 		return
@@ -279,7 +279,7 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
+	decodedTokenBytes, err := jwt.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -306,7 +306,7 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 		return
 	}
 	response := common.ResponseTxid{Txid: txid}
-	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	encodedRes, err := jwt.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		config.GlobalResponse(encodedRes, err, c)
 		return
@@ -322,7 +322,7 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 		config.GlobalResponse(nil, err, c)
 		return
 	}
-	decodedTokenBytes, err := jws.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
+	decodedTokenBytes, err := jwt.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
 	if err != nil {
 		config.GlobalResponse(nil, err, c)
 		return
@@ -358,7 +358,7 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 	response := responses.Address{
 		Valid: AddressValidation.Ismine,
 	}
-	encodedRes, err := jws.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	encodedRes, err := jwt.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		config.GlobalResponse(encodedRes, err, c)
 		return

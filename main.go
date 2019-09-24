@@ -27,8 +27,8 @@ func GetApp() *gin.Engine {
 }
 
 func ApplyRoutes(r *gin.Engine) {
-	authUser := os.Getenv("AUTH_USERNAME")
-	authPassword := os.Getenv("AUTH_PASSWORD")
+	authUser := os.Getenv("PLUTUS_AUTH_USERNAME")
+	authPassword := os.Getenv("PLUTUS_AUTH_PASSWORD")
 	api := r.Group("/", gin.BasicAuth(gin.Accounts{
 		authUser: authPassword,
 	}))
