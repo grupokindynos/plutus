@@ -8,11 +8,15 @@ import (
 	"github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/grupokindynos/common/jwt"
+	res "github.com/grupokindynos/common/responses"
+	"github.com/grupokindynos/common/tokens/mrt"
+	"github.com/grupokindynos/common/tokens/mvt"
 	"github.com/grupokindynos/plutus/config"
 	"github.com/grupokindynos/plutus/models/blockbook"
 	"github.com/grupokindynos/plutus/models/common"
 	"github.com/grupokindynos/plutus/models/responses"
 	"github.com/grupokindynos/plutus/models/rpc"
+	"github.com/grupokindynos/plutus/utils"
 	"github.com/ybbus/jsonrpc"
 	"io/ioutil"
 	"os"
@@ -24,38 +28,43 @@ type RPCClient jsonrpc.RPCClient
 type WalletController struct{}
 
 func (w *WalletController) GetInfo(c *gin.Context) {
+	_, err := utils.VerifyHeaderSignature(c)
+	if err != nil {
+		res.GlobalResponseNoAuth(c)
+		return
+	}
 	coin := c.Param("coin")
 	coinConfig, err := coinfactory.GetCoin(coin)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	rpcClient := w.RPCClient(coinConfig)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.GetBlockchainInfo)
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
+		res.GlobalResponseError(nil, config.ErrorRpcConnection, c)
 		return
 	}
 	var ChainInfo rpc.GetBlockchainInfo
 	err = chainRes.GetObject(&ChainInfo)
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
+		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
 	netRes, err := rpcClient.Call(coinConfig.RpcMethods.GetNetworkInfo)
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
+		res.GlobalResponseError(nil, config.ErrorRpcConnection, c)
 		return
 	}
 	var NetInfo rpc.GetNetworkInfo
 	err = netRes.GetObject(&NetInfo)
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
+		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
 	response := responses.Info{
@@ -67,102 +76,127 @@ func (w *WalletController) GetInfo(c *gin.Context) {
 		Subversion:  NetInfo.Subversion,
 		Connections: NetInfo.Connections,
 	}
-	config.GlobalResponse(response, err, c)
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	res.GlobalResponseMRT(header, body, c)
 	return
 }
 
 func (w *WalletController) GetWalletInfo(c *gin.Context) {
+	_, err := utils.VerifyHeaderSignature(c)
+	if err != nil {
+		res.GlobalResponseNoAuth(c)
+		return
+	}
 	coin := c.Param("coin")
 	coinConfig, err := coinfactory.GetCoin(coin)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	rpcClient := w.RPCClient(coinConfig)
-	res, err := rpcClient.Call(coinConfig.RpcMethods.GetWalletInfo)
+	callRes, err := rpcClient.Call(coinConfig.RpcMethods.GetWalletInfo)
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
+		res.GlobalResponseError(nil, config.ErrorRpcConnection, c)
 		return
 	}
 	var WalletInfo rpc.GetWalletInfo
-	err = res.GetObject(&WalletInfo)
+	err = callRes.GetObject(&WalletInfo)
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
+		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
 	response := responses.Balance{
 		Confirmed:   WalletInfo.Balance,
 		Unconfirmed: WalletInfo.UnconfirmedBalance,
 	}
-	config.GlobalResponse(response, err, c)
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	res.GlobalResponseMRT(header, body, c)
 	return
 }
 
 func (w *WalletController) GetAddress(c *gin.Context) {
+	_, err := utils.VerifyHeaderSignature(c)
+	if err != nil {
+		res.GlobalResponseNoAuth(c)
+		return
+	}
 	coin := c.Param("coin")
 	coinConfig, err := coinfactory.GetCoin(coin)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	rpcClient := w.RPCClient(coinConfig)
-	res, err := rpcClient.Call(coinConfig.RpcMethods.GetNewAddress, jsonrpc.Params(""))
+	callRes, err := rpcClient.Call(coinConfig.RpcMethods.GetNewAddress, jsonrpc.Params(""))
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
+		res.GlobalResponseError(nil, config.ErrorRpcConnection, c)
 		return
 	}
-	address, err := res.GetString()
+	address, err := callRes.GetString()
 	addressRes := responses.NewAddress{Address: address}
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
+		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	encodedRes, err := jwt.EncodeJWS(addressRes, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), addressRes, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
-	config.GlobalResponse(encodedRes, nil, c)
+	res.GlobalResponseMRT(header, body, c)
 	return
 }
 
 func (w *WalletController) GetNodeStatus(c *gin.Context) {
+	_, err := utils.VerifyHeaderSignature(c)
+	if err != nil {
+		res.GlobalResponseNoAuth(c)
+		return
+	}
 	coin := c.Param("coin")
 	coinConfig, err := coinfactory.GetCoin(coin)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	rpcClient := w.RPCClient(coinConfig)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.GetBlockchainInfo)
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcConnection, c)
+		res.GlobalResponseError(nil, config.ErrorRpcConnection, c)
 		return
 	}
 	var nodeStatus rpc.GetBlockchainInfo
 	err = chainRes.GetObject(&nodeStatus)
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
+		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
 	externalRes, err := config.HttpClient.Get("https://" + coinConfig.BlockchainInfo.ExternalSource + "/api")
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorExternalStatusError, c)
+		res.GlobalResponseError(nil, config.ErrorExternalStatusError, c)
 		return
 	}
 	defer func() {
@@ -182,211 +216,266 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 		ExternalHeaders: externalStatus.Backend.Headers,
 		Synced:          isSynced,
 	}
-	config.GlobalResponse(response, nil, c)
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	res.GlobalResponseMRT(header, body, c)
 	return
 }
 
 func (w *WalletController) SendToAddress(c *gin.Context) {
-	var BodyReq common.BodyReq
-	err := c.BindJSON(&BodyReq)
+	servicePubKey, err := utils.VerifyHeaderSignature(c)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseNoAuth(c)
 		return
 	}
-	decodedTokenBytes, err := jwt.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
+	var BodyReq common.BodyReq
+	err = c.BindJSON(&BodyReq)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	bodyBytes, err := json.Marshal(BodyReq.Payload)
+	if err != nil {
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), bodyBytes, servicePubKey, os.Getenv("MASTER_PASSWORD"))
+	if !valid {
+		res.GlobalResponseNoAuth(c)
 		return
 	}
 	var SendToAddressData common.SendAddressBodyReq
-	err = json.Unmarshal(decodedTokenBytes, &SendToAddressData)
+	err = json.Unmarshal(payload, &SendToAddressData)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
+		res.GlobalResponseError(nil, config.ErrorUnableToSend, c)
 		return
 	}
 	response := common.ResponseTxid{Txid: txid}
-	encodedRes, err := jwt.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
-		config.GlobalResponse(encodedRes, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
-	config.GlobalResponse(encodedRes, nil, c)
+	res.GlobalResponseMRT(header, body, c)
 	return
 }
 
 func (w *WalletController) SendToColdStorage(c *gin.Context) {
-	var BodyReq common.BodyReq
-	err := c.BindJSON(&BodyReq)
+	servicePubKey, err := utils.VerifyHeaderSignature(c)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseNoAuth(c)
 		return
 	}
-	decodedTokenBytes, err := jwt.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
+	var BodyReq common.BodyReq
+	err = c.BindJSON(&BodyReq)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	bodyBytes, err := json.Marshal(BodyReq.Payload)
+	if err != nil {
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), bodyBytes, servicePubKey, os.Getenv("MASTER_PASSWORD"))
+	if !valid {
+		res.GlobalResponseNoAuth(c)
 		return
 	}
 	var SendToAddressData common.SendAddressInternalBodyReq
-	err = json.Unmarshal(decodedTokenBytes, &SendToAddressData)
+	err = json.Unmarshal(payload, &SendToAddressData)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	txid, err := w.Send(coinConfig, coinConfig.ColdAddress, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
+		res.GlobalResponseError(nil, config.ErrorUnableToSend, c)
 		return
 	}
 	response := common.ResponseTxid{Txid: txid}
-	encodedRes, err := jwt.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
-		config.GlobalResponse(encodedRes, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
-	config.GlobalResponse(encodedRes, nil, c)
+	res.GlobalResponseMRT(header, body, c)
 	return
 }
 
 func (w *WalletController) SendToExchange(c *gin.Context) {
-	var BodyReq common.BodyReq
-	err := c.BindJSON(&BodyReq)
+	servicePubKey, err := utils.VerifyHeaderSignature(c)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseNoAuth(c)
 		return
 	}
-	decodedTokenBytes, err := jwt.DecodeJWS(BodyReq.Payload, os.Getenv("ADRESTIA_PUBLIC_KEY"))
+	var BodyReq common.BodyReq
+	err = c.BindJSON(&BodyReq)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	bodyBytes, err := json.Marshal(BodyReq.Payload)
+	if err != nil {
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), bodyBytes, servicePubKey, os.Getenv("MASTER_PASSWORD"))
+	if !valid {
+		res.GlobalResponseNoAuth(c)
 		return
 	}
 	var SendToAddressData common.SendAddressBodyReq
-	err = json.Unmarshal(decodedTokenBytes, &SendToAddressData)
+	err = json.Unmarshal(payload, &SendToAddressData)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorUnableToSend, c)
+		res.GlobalResponseError(nil, config.ErrorUnableToSend, c)
 		return
 	}
 	response := common.ResponseTxid{Txid: txid}
-	encodedRes, err := jwt.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
-		config.GlobalResponse(encodedRes, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
-	config.GlobalResponse(encodedRes, nil, c)
+	res.GlobalResponseMRT(header, body, c)
 	return
 }
 
 func (w *WalletController) ValidateAddress(c *gin.Context) {
-	var BodyReq common.BodyReq
-	err := c.BindJSON(&BodyReq)
+	servicePubKey, err := utils.VerifyHeaderSignature(c)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseNoAuth(c)
 		return
 	}
-	decodedTokenBytes, err := jwt.DecodeJWS(BodyReq.Payload, os.Getenv("TYCHE_PUBLIC_KEY"))
+	var BodyReq common.BodyReq
+	err = c.BindJSON(&BodyReq)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	bodyBytes, err := json.Marshal(BodyReq.Payload)
+	if err != nil {
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), bodyBytes, servicePubKey, os.Getenv("MASTER_PASSWORD"))
+	if !valid {
+		res.GlobalResponseNoAuth(c)
 		return
 	}
 	var ValidateAddressData common.AddressValidationBodyReq
-	err = json.Unmarshal(decodedTokenBytes, &ValidateAddressData)
+	err = json.Unmarshal(payload, &ValidateAddressData)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	coinConfig, err := coinfactory.GetCoin(ValidateAddressData.Coin)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	rpcClient := w.RPCClient(coinConfig)
-	res, err := rpcClient.Call(coinConfig.RpcMethods.ValidateAddress, jsonrpc.Params(ValidateAddressData.Address))
+	resCall, err := rpcClient.Call(coinConfig.RpcMethods.ValidateAddress, jsonrpc.Params(ValidateAddressData.Address))
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorUnableToValidateAddress, c)
+		res.GlobalResponseError(nil, config.ErrorUnableToValidateAddress, c)
 		return
 	}
 	var AddressValidation rpc.ValidateAddress
-	err = res.GetObject(&AddressValidation)
+	err = resCall.GetObject(&AddressValidation)
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorRpcDeserialize, c)
+		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
 	response := responses.Address{
 		Valid: AddressValidation.Ismine,
 	}
-	encodedRes, err := jwt.EncodeJWS(response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
-		config.GlobalResponse(encodedRes, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
-	config.GlobalResponse(encodedRes, nil, c)
+	res.GlobalResponseMRT(header, body, c)
 	return
 }
 
 func (w *WalletController) GetTx(c *gin.Context) {
+	_, err := utils.VerifyHeaderSignature(c)
+	if err != nil {
+		res.GlobalResponseNoAuth(c)
+		return
+	}
 	coin := c.Param("coin")
 	txid := c.Param("txid")
 	coinConfig, err := coinfactory.GetCoin(coin)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	err = coinfactory.CheckCoinKeys(coinConfig)
 	if err != nil {
-		config.GlobalResponse(nil, err, c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	rpcClient := w.RPCClient(coinConfig)
-	res, err := rpcClient.Call(coinConfig.RpcMethods.GetRawTransaction, jsonrpc.Params(txid, coinConfig.RpcMethods.GetRawTransactionVerbosity))
+	resCall, err := rpcClient.Call(coinConfig.RpcMethods.GetRawTransaction, jsonrpc.Params(txid, coinConfig.RpcMethods.GetRawTransactionVerbosity))
 	if err != nil {
-		config.GlobalResponse(nil, config.ErrorUnableToValidateAddress, c)
+		res.GlobalResponseError(nil, config.ErrorUnableToValidateAddress, c)
 		return
 	}
-	config.GlobalResponse(res.Result, nil, c)
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), resCall.Result, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		res.GlobalResponseError(nil, err, c)
+		return
+	}
+	res.GlobalResponseMRT(header, body, c)
 	return
 }
 

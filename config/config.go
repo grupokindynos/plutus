@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/common/aes"
 	"golang.org/x/crypto/ssh"
 	"io"
@@ -23,7 +22,9 @@ var (
 	ErrorExternalStatusError     = errors.New("unable to get external source status")
 	ErrorUnableToSend            = errors.New("unable to send transaction")
 	ErrorUnableToValidateAddress = errors.New("unable to validate address")
-	HttpClient                   = &http.Client{
+	ErrorNoAuthorized            = errors.New("you are not authorized")
+
+	HttpClient = &http.Client{
 		Timeout: time.Second * 5,
 	}
 )
@@ -155,15 +156,4 @@ func PrivateKey(pvKeyString string) ssh.AuthMethod {
 		return nil
 	}
 	return ssh.PublicKeys(key)
-}
-
-// GlobalResponse is used to wrap all the API responses under the same model.
-// Automatically detect if there is an error and return status and code according
-func GlobalResponse(result interface{}, err error, c *gin.Context) *gin.Context {
-	if err != nil {
-		c.JSON(500, gin.H{"message": "Error", "error": err.Error(), "status": -1})
-	} else {
-		c.JSON(200, gin.H{"data": result, "status": 1})
-	}
-	return c
 }
