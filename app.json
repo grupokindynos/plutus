@@ -10,10 +10,10 @@
     "PLUTUS_PRIVATE_KEY": { "description":  "Plutus private key"},
     "PLUTUS_PUBLIC_KEY": { "description":  "Plutus public key"},
     "KEY_PASSWORD": { "description": "Main password to decrypt AES encrypted private keys for ssh tunnel"},
+    "MASTER_PASSWORD": { "description": "Master encryption password for microservice communication"},
     "TYCHE_PUBLIC_KEY": { "description": "Tyche microservice public key"},
     "LADON_PUBLIC_KEY": { "description": "Ladon microservice public key"},
     "ADRESTIA_PUBLIC_KEY": { "description": "Adrestia microserrvice public key"},
-    "MASTER_PASSWORD": { "description": "Master encryption password for microservice communication"},
 
 
     "POLIS_IP": { "description": "IP of the hot-wallet server" },
@@ -113,6 +113,6 @@
     "MNP_SSH_USER": { "description": "Username for the ssh tunnel" },
     "MNP_SSH_PORT": { "description": "SSH port" },
     "MNP_SSH_PRIVKEY": { "description": "AES encrypted private key string" },
-    "MNP_COLD_ADDRESS": { "description": "Selected address for cold storage" },
+    "MNP_COLD_ADDRESS": { "description": "Selected address for cold storage" }
   }
 }
