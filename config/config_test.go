@@ -66,20 +66,6 @@ func TestGlobalResponseError(t *testing.T) {
 	assert.Equal(t, float64(-1), response["status"])
 }
 
-func TestGlobalResponseSuccess(t *testing.T) {
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	mockData := "success"
-	_ = GlobalResponse(mockData, nil, c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Nil(t, response["error"])
-	assert.Equal(t, mockData, response["data"])
-	assert.Equal(t, float64(1), response["status"])
-}
-
 func TestPrivateKey(t *testing.T) {
 	// Private Key parsing
 	err := os.Setenv("KEY_PASSWORD", "rb8L7BKBDG9shnB6j8EPG67MwHaWC8Rw")
