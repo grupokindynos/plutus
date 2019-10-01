@@ -150,12 +150,11 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 		return
 	}
 	address, err := callRes.GetString()
-	addressRes := responses.NewAddress{Address: address}
 	if err != nil {
 		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), addressRes, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), address, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		res.GlobalResponseError(nil, err, c)
 		return
