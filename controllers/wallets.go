@@ -235,12 +235,7 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 		res.GlobalResponseError(nil, err, c)
 		return
 	}
-	bodyBytes, err := json.Marshal(BodyReq.Payload)
-	if err != nil {
-		res.GlobalResponseError(nil, err, c)
-		return
-	}
-	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), bodyBytes, servicePubKey, os.Getenv("MASTER_PASSWORD"))
+	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), BodyReq.Payload, servicePubKey, os.Getenv("MASTER_PASSWORD"))
 	if !valid {
 		res.GlobalResponseNoAuth(c)
 		return
@@ -288,12 +283,7 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 		res.GlobalResponseError(nil, err, c)
 		return
 	}
-	bodyBytes, err := json.Marshal(BodyReq.Payload)
-	if err != nil {
-		res.GlobalResponseError(nil, err, c)
-		return
-	}
-	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), bodyBytes, servicePubKey, os.Getenv("MASTER_PASSWORD"))
+	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), BodyReq.Payload, servicePubKey, os.Getenv("MASTER_PASSWORD"))
 	if !valid {
 		res.GlobalResponseNoAuth(c)
 		return
@@ -341,12 +331,7 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 		res.GlobalResponseError(nil, err, c)
 		return
 	}
-	bodyBytes, err := json.Marshal(BodyReq.Payload)
-	if err != nil {
-		res.GlobalResponseError(nil, err, c)
-		return
-	}
-	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), bodyBytes, servicePubKey, os.Getenv("MASTER_PASSWORD"))
+	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), BodyReq.Payload, servicePubKey, os.Getenv("MASTER_PASSWORD"))
 	if !valid {
 		res.GlobalResponseNoAuth(c)
 		return
@@ -394,12 +379,7 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 		res.GlobalResponseError(nil, err, c)
 		return
 	}
-	bodyBytes, err := json.Marshal(BodyReq.Payload)
-	if err != nil {
-		res.GlobalResponseError(nil, err, c)
-		return
-	}
-	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), bodyBytes, servicePubKey, os.Getenv("MASTER_PASSWORD"))
+	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), BodyReq.Payload, servicePubKey, os.Getenv("MASTER_PASSWORD"))
 	if !valid {
 		res.GlobalResponseNoAuth(c)
 		return
