@@ -2,13 +2,9 @@ package config
 
 import (
 	"crypto/aes"
-	"encoding/json"
-	"errors"
-	"github.com/gin-gonic/gin"
 	"github.com/gliderlabs/ssh"
 	aesk "github.com/grupokindynos/common/aes"
 	"github.com/stretchr/testify/assert"
-	"net/http/httptest"
 	"os"
 	"strconv"
 	"testing"
@@ -52,19 +48,6 @@ func TestEncryption(t *testing.T) {
 	assert.Equal(t, decryptedMsg, messageStr)
 }
 
-func TestGlobalResponseError(t *testing.T) {
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	newErr := errors.New("test error")
-	_ = GlobalResponse(nil, newErr, c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Nil(t, response["data"])
-	assert.Equal(t, newErr.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
-}
 
 func TestPrivateKey(t *testing.T) {
 	// Private Key parsing
