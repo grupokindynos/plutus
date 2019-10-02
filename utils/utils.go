@@ -2,39 +2,31 @@ package utils
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/common/jwt"
+	"github.com/grupokindynos/common/tokens/mvt"
 	"github.com/grupokindynos/plutus/config"
 	"os"
 )
 
-func VerifyHeaderSignature(c *gin.Context) (string, error) {
-	// Get the microservice name from header
-	verificationToken := c.GetHeader("service")
-	if verificationToken == "" {
-		return "", errors.New("missing header signature")
+func VerifyRequest(c *gin.Context) (payload []byte, err error) {
+	reqBody, _ := c.GetRawData()
+	headerSignature := c.GetHeader("service")
+	if headerSignature == "" {
+		return nil, config.ErrorNoHeaderSignature
 	}
-	// Decode not-verify
-	payload, err := jwt.DecodeJWSNoVerify(verificationToken)
-	// Unmarshal the payload
+	decodedHeader, err := jwt.DecodeJWSNoVerify(headerSignature)
+	if err != nil {
+		return nil, config.ErrorSignatureParse
+	}
 	var serviceStr string
-	err = json.Unmarshal(payload, &serviceStr)
+	err = json.Unmarshal(decodedHeader, &serviceStr)
 	if err != nil {
-		return "", err
+		return nil, config.ErrorUnmarshal
 	}
-	pubKey, err := GetPubKeyFromStrService(serviceStr)
-	// Verify the header token signature
-	_, err = jwt.DecodeJWS(verificationToken, pubKey)
-	// If there is an error, means the request was not properly signed
-	if err != nil {
-		return "", err
-	}
-	return pubKey, nil
-}
-
-func GetPubKeyFromStrService(service string) (pubKey string, err error) {
-	switch service {
+	// Check which service the request is announcing
+	var pubKey string
+	switch serviceStr {
 	case "ladon":
 		pubKey = os.Getenv("LADON_PUBLIC_KEY")
 	case "tyche":
@@ -42,7 +34,16 @@ func GetPubKeyFromStrService(service string) (pubKey string, err error) {
 	case "adrestia":
 		pubKey = os.Getenv("ADRESTIA_PUBLIC_KEY")
 	default:
-		return "", config.ErrorNoAuthorized
+		return nil, config.ErrorWrongMessage
 	}
-	return pubKey, nil
+	var reqToken string
+	err = json.Unmarshal(reqBody, &reqToken)
+	if err != nil {
+		return nil, config.ErrorUnmarshal
+	}
+	valid, payload := mvt.VerifyMVTToken(headerSignature, reqToken, pubKey, os.Getenv("MASTER_PASSWORD"))
+	if !valid {
+		return nil, config.ErrorInvalidPassword
+	}
+	return payload, nil
 }

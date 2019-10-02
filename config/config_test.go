@@ -48,7 +48,6 @@ func TestEncryption(t *testing.T) {
 	assert.Equal(t, decryptedMsg, messageStr)
 }
 
-
 func TestPrivateKey(t *testing.T) {
 	// Private Key parsing
 	err := os.Setenv("KEY_PASSWORD", "rb8L7BKBDG9shnB6j8EPG67MwHaWC8Rw")

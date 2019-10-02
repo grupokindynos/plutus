@@ -7,13 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
+	"github.com/grupokindynos/common/plutus"
 	res "github.com/grupokindynos/common/responses"
 	"github.com/grupokindynos/common/tokens/mrt"
-	"github.com/grupokindynos/common/tokens/mvt"
 	"github.com/grupokindynos/plutus/config"
 	"github.com/grupokindynos/plutus/models/blockbook"
 	"github.com/grupokindynos/plutus/models/common"
-	"github.com/grupokindynos/plutus/models/responses"
 	"github.com/grupokindynos/plutus/models/rpc"
 	"github.com/grupokindynos/plutus/utils"
 	"github.com/ybbus/jsonrpc"
@@ -27,7 +26,7 @@ type RPCClient jsonrpc.RPCClient
 type WalletController struct{}
 
 func (w *WalletController) GetInfo(c *gin.Context) {
-	_, err := utils.VerifyHeaderSignature(c)
+	_, err := utils.VerifyRequest(c)
 	if err != nil {
 		res.GlobalResponseNoAuth(c)
 		return
@@ -66,13 +65,13 @@ func (w *WalletController) GetInfo(c *gin.Context) {
 		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	response := responses.Info{
+	response := plutus.Info{
 		Blocks:      ChainInfo.Blocks,
 		Headers:     ChainInfo.Headers,
 		Chain:       ChainInfo.Chain,
 		Protocol:    NetInfo.Protocolversion,
 		Version:     NetInfo.Version,
-		Subversion:  NetInfo.Subversion,
+		SubVersion:  NetInfo.Subversion,
 		Connections: NetInfo.Connections,
 	}
 	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
@@ -85,7 +84,7 @@ func (w *WalletController) GetInfo(c *gin.Context) {
 }
 
 func (w *WalletController) GetWalletInfo(c *gin.Context) {
-	_, err := utils.VerifyHeaderSignature(c)
+	_, err := utils.VerifyRequest(c)
 	if err != nil {
 		res.GlobalResponseNoAuth(c)
 		return
@@ -113,7 +112,7 @@ func (w *WalletController) GetWalletInfo(c *gin.Context) {
 		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	response := responses.Balance{
+	response := plutus.Balance{
 		Confirmed:   WalletInfo.Balance,
 		Unconfirmed: WalletInfo.UnconfirmedBalance,
 	}
@@ -127,7 +126,7 @@ func (w *WalletController) GetWalletInfo(c *gin.Context) {
 }
 
 func (w *WalletController) GetAddress(c *gin.Context) {
-	_, err := utils.VerifyHeaderSignature(c)
+	_, err := utils.VerifyRequest(c)
 	if err != nil {
 		res.GlobalResponseNoAuth(c)
 		return
@@ -164,7 +163,7 @@ func (w *WalletController) GetAddress(c *gin.Context) {
 }
 
 func (w *WalletController) GetNodeStatus(c *gin.Context) {
-	_, err := utils.VerifyHeaderSignature(c)
+	_, err := utils.VerifyRequest(c)
 	if err != nil {
 		res.GlobalResponseNoAuth(c)
 		return
@@ -207,12 +206,12 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 	if nodeStatus.Blocks == externalStatus.Backend.Blocks && nodeStatus.Headers == externalStatus.Backend.Headers {
 		isSynced = true
 	}
-	response := responses.Status{
-		NodeBlocks:      nodeStatus.Blocks,
-		NodeHeaders:     nodeStatus.Headers,
+	response := plutus.Status{
+		Blocks:          nodeStatus.Blocks,
+		Headers:         nodeStatus.Headers,
 		ExternalBlocks:  externalStatus.Backend.Blocks,
 		ExternalHeaders: externalStatus.Backend.Headers,
-		Synced:          isSynced,
+		SyncStatus:      isSynced,
 	}
 	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
@@ -224,19 +223,8 @@ func (w *WalletController) GetNodeStatus(c *gin.Context) {
 }
 
 func (w *WalletController) SendToAddress(c *gin.Context) {
-	servicePubKey, err := utils.VerifyHeaderSignature(c)
+	payload, err := utils.VerifyRequest(c)
 	if err != nil {
-		res.GlobalResponseNoAuth(c)
-		return
-	}
-	var BodyReq common.BodyReq
-	err = c.BindJSON(&BodyReq)
-	if err != nil {
-		res.GlobalResponseError(nil, err, c)
-		return
-	}
-	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), BodyReq.Payload, servicePubKey, os.Getenv("MASTER_PASSWORD"))
-	if !valid {
 		res.GlobalResponseNoAuth(c)
 		return
 	}
@@ -272,19 +260,8 @@ func (w *WalletController) SendToAddress(c *gin.Context) {
 }
 
 func (w *WalletController) SendToColdStorage(c *gin.Context) {
-	servicePubKey, err := utils.VerifyHeaderSignature(c)
+	payload, err := utils.VerifyRequest(c)
 	if err != nil {
-		res.GlobalResponseNoAuth(c)
-		return
-	}
-	var BodyReq common.BodyReq
-	err = c.BindJSON(&BodyReq)
-	if err != nil {
-		res.GlobalResponseError(nil, err, c)
-		return
-	}
-	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), BodyReq.Payload, servicePubKey, os.Getenv("MASTER_PASSWORD"))
-	if !valid {
 		res.GlobalResponseNoAuth(c)
 		return
 	}
@@ -320,19 +297,8 @@ func (w *WalletController) SendToColdStorage(c *gin.Context) {
 }
 
 func (w *WalletController) SendToExchange(c *gin.Context) {
-	servicePubKey, err := utils.VerifyHeaderSignature(c)
+	payload, err := utils.VerifyRequest(c)
 	if err != nil {
-		res.GlobalResponseNoAuth(c)
-		return
-	}
-	var BodyReq common.BodyReq
-	err = c.BindJSON(&BodyReq)
-	if err != nil {
-		res.GlobalResponseError(nil, err, c)
-		return
-	}
-	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), BodyReq.Payload, servicePubKey, os.Getenv("MASTER_PASSWORD"))
-	if !valid {
 		res.GlobalResponseNoAuth(c)
 		return
 	}
@@ -368,19 +334,8 @@ func (w *WalletController) SendToExchange(c *gin.Context) {
 }
 
 func (w *WalletController) ValidateAddress(c *gin.Context) {
-	servicePubKey, err := utils.VerifyHeaderSignature(c)
+	payload, err := utils.VerifyRequest(c)
 	if err != nil {
-		res.GlobalResponseNoAuth(c)
-		return
-	}
-	var BodyReq common.BodyReq
-	err = c.BindJSON(&BodyReq)
-	if err != nil {
-		res.GlobalResponseError(nil, err, c)
-		return
-	}
-	valid, payload := mvt.VerifyMVTToken(c.GetHeader("service"), BodyReq.Payload, servicePubKey, os.Getenv("MASTER_PASSWORD"))
-	if !valid {
 		res.GlobalResponseNoAuth(c)
 		return
 	}
@@ -412,7 +367,7 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 		res.GlobalResponseError(nil, config.ErrorRpcDeserialize, c)
 		return
 	}
-	response := responses.Address{
+	response := plutus.Address{
 		Valid: AddressValidation.Ismine,
 	}
 	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
@@ -425,7 +380,7 @@ func (w *WalletController) ValidateAddress(c *gin.Context) {
 }
 
 func (w *WalletController) GetTx(c *gin.Context) {
-	_, err := utils.VerifyHeaderSignature(c)
+	_, err := utils.VerifyRequest(c)
 	if err != nil {
 		res.GlobalResponseNoAuth(c)
 		return

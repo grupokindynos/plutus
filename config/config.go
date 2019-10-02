@@ -22,9 +22,12 @@ var (
 	ErrorExternalStatusError     = errors.New("unable to get external source status")
 	ErrorUnableToSend            = errors.New("unable to send transaction")
 	ErrorUnableToValidateAddress = errors.New("unable to validate address")
-	ErrorNoAuthorized            = errors.New("you are not authorized")
-
-	HttpClient = &http.Client{
+	ErrorNoHeaderSignature       = errors.New("no signature found in header")
+	ErrorSignatureParse          = errors.New("could not parse header signature")
+	ErrorUnmarshal               = errors.New("unable to unmarshal object")
+	ErrorWrongMessage            = errors.New("signed message is not on known hosts")
+	ErrorInvalidPassword         = errors.New("could not decrypt using master password")
+	HttpClient                   = &http.Client{
 		Timeout: time.Second * 5,
 	}
 )

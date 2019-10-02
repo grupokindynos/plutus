@@ -89,8 +89,8 @@ github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORR
 github.com/gostaticanalysis/analysisutil v0.0.0-20190318220348-4088753ea4d3/go.mod h1:eEOZF4jCKGi+aprrirO9e7WKB3beBRtWgqGunKl6pKE=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
-github.com/grupokindynos/common v0.0.0-20191001031702-780da16d0f64 h1:8Sx9yw7XiabEJTxnpnLLd1zHYlp6PoiJBL4RVdKWX+s=
-github.com/grupokindynos/common v0.0.0-20191001031702-780da16d0f64/go.mod h1:LWwa+FAKwMTYMlmxqB+BFH2VyKth9j2Lkk0l1mLd6XU=
+github.com/grupokindynos/common v0.0.0-20191002175401-1bd224e001d9 h1:2yG4hw7tk5AIP1OIXh8MKasq2QaIGg/FXZ1nlHQVI4E=
+github.com/grupokindynos/common v0.0.0-20191002175401-1bd224e001d9/go.mod h1:LWwa+FAKwMTYMlmxqB+BFH2VyKth9j2Lkk0l1mLd6XU=
 github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce/go.mod h1:oZtUIOe8dh44I2q6ScRibXws4Ajl+d+nod3AaR9vL5w=
 github.com/heroku/heroku-go/v5 v5.1.0/go.mod h1:d+1QrZyjbnQJG1f8xIoVvMQRFLt3XRVZOdlm26Sr73U=
 github.com/heroku/rollrus v0.0.2/go.mod h1:TYRdT+Wi9GFScJySktdEoIUdjRWRg3oclZ0QtS1Yq2s=
