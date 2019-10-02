@@ -29,7 +29,7 @@ type WalletController struct{}
 func (w *WalletController) GetInfo(c *gin.Context) {
 	_, err := utils.VerifyHeaderSignature(c)
 	if err != nil {
-		res.GlobalResponseNoAuth(c)
+		res.GlobalResponseError(nil, err, c)
 		return
 	}
 	coin := c.Param("coin")
