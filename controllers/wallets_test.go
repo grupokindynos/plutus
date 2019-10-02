@@ -1,14 +1,9 @@
 package controllers
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/common/coin-factory"
-	"github.com/grupokindynos/plutus/config"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
-	"net/http/httptest"
 	"testing"
 )
 
@@ -18,117 +13,76 @@ func init() {
 	_ = godotenv.Load()
 }
 
+var TestParamsError = Params{
+	Coin: "No-COIN",
+}
+
+var TestParams = Params{
+	Coin: "polis",
+}
+
 func TestWalletController_GetInfo(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "No-Coin"}}
-	wCtrl.GetInfo(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoCoin.Error(), response["error"])
-	fmt.Println(response)
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetInfo(TestParamsError)
+	assert.Nil(t, res)
+	assert.NotNil(t, err)
+	assert.Equal(t, "coin not available", err.Error())
 }
 
 func TestWalletController_GetInfo2(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "polis"}}
-	wCtrl.GetInfo(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoRpcUserProvided.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetInfo(TestParams)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, "missing rpc username", err.Error())
 }
 
 func TestWalletController_GetWalletInfo(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "No-Coin"}}
-	wCtrl.GetWalletInfo(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoCoin.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetWalletInfo(TestParamsError)
+	assert.Nil(t, res)
+	assert.NotNil(t, err)
+	assert.Equal(t, "coin not available", err.Error())
 }
 
 func TestWalletController_GetWalletInfo2(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "polis"}}
-	wCtrl.GetWalletInfo(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoRpcUserProvided.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetWalletInfo(TestParams)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, "missing rpc username", err.Error())
 }
 
 func TestWalletController_GetAddress(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "No-Coin"}}
-	wCtrl.GetAddress(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoCoin.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetAddress(TestParamsError)
+	assert.Nil(t, res)
+	assert.NotNil(t, err)
+	assert.Equal(t, "coin not available", err.Error())
 }
 
 func TestWalletController_GetAddress2(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "polis"}}
-	wCtrl.GetAddress(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoRpcUserProvided.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetAddress(TestParams)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, "missing rpc username", err.Error())
 }
 
 func TestWalletController_GetNodeStatus(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "No-Coin"}}
-	wCtrl.GetNodeStatus(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoCoin.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetNodeStatus(TestParamsError)
+	assert.Nil(t, res)
+	assert.NotNil(t, err)
+	assert.Equal(t, "coin not available", err.Error())
 }
 
 func TestWalletController_GetNodeStatus2(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "polis"}}
-	wCtrl.GetNodeStatus(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoRpcUserProvided.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetNodeStatus(TestParams)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, "missing rpc username", err.Error())
 }
 
 // TODO migrate tests
@@ -246,30 +200,18 @@ func TestWalletController_ValidateAddress2(t *testing.T) {
 
 func TestWalletController_GetTx(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "No-Coin"}}
-	wCtrl.GetTx(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoCoin.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetTx(TestParamsError)
+	assert.Nil(t, res)
+	assert.NotNil(t, err)
+	assert.Equal(t, "coin not available", err.Error())
 }
 
 func TestWalletController_GetTx2(t *testing.T) {
 	// Error cases
-	resp := httptest.NewRecorder()
-	gin.SetMode(gin.TestMode)
-	c, _ := gin.CreateTestContext(resp)
-	c.Params = gin.Params{gin.Param{Key: "coin", Value: "polis"}}
-	wCtrl.GetTx(c)
-	var response map[string]interface{}
-	err := json.Unmarshal(resp.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	assert.Equal(t, config.ErrorNoRpcUserProvided.Error(), response["error"])
-	assert.Equal(t, float64(-1), response["status"])
+	res, err := wCtrl.GetTx(TestParams)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, "missing rpc username", err.Error())
 }
 
 func TestWalletController_RPCClient(t *testing.T) {

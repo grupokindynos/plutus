@@ -3,6 +3,9 @@ package main
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/grupokindynos/common/responses"
+	"github.com/grupokindynos/common/tokens/mrt"
+	"github.com/grupokindynos/common/tokens/mvt"
 	"github.com/grupokindynos/plutus/controllers"
 	_ "github.com/heroku/x/hmetrics/onload"
 	_ "github.com/joho/godotenv/autoload"
@@ -34,17 +37,40 @@ func ApplyRoutes(r *gin.Engine) {
 	}))
 	{
 		walletsCtrl := controllers.WalletController{}
-		api.GET("/status/:coin", walletsCtrl.GetNodeStatus)
-		api.GET("/info/:coin", walletsCtrl.GetInfo)
-		api.GET("/balance/:coin", walletsCtrl.GetWalletInfo)
-		api.GET("/tx/:coin/:txid", walletsCtrl.GetTx)
-		api.GET("/address/:coin", walletsCtrl.GetAddress)
-		api.POST("/validate/address", walletsCtrl.ValidateAddress)
-		api.POST("/send/address", walletsCtrl.SendToAddress)
-		api.POST("/send/cold", walletsCtrl.SendToColdStorage)
-		api.POST("/send/exchange", walletsCtrl.SendToExchange)
+		api.GET("/status/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetNodeStatus) })
+		api.GET("/info/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetInfo) })
+		api.GET("/balance/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetWalletInfo) })
+		api.GET("/tx/:coin/:txid", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetTx) })
+		api.GET("/address/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetAddress) })
+		api.POST("/validate/address", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.ValidateAddress) })
+		api.POST("/send/address", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.SendToAddress) })
+		api.POST("/send/cold", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.SendToColdStorage) })
+		api.POST("/send/exchange", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.SendToExchange) })
 	}
 	r.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not Found")
 	})
+}
+
+func VerifyRequest(c *gin.Context, method func(params controllers.Params) (interface{}, error)) {
+	coin := c.Param("coin")
+	txid := c.Param("txid")
+	payload, err := mvt.VerifyRequest(c)
+	if err != nil {
+		responses.GlobalResponseNoAuth(c)
+		return
+	}
+	params := controllers.Params{
+		Coin: coin,
+		Txid: txid,
+		Body: payload,
+	}
+	response, err := method(params)
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		responses.GlobalResponseError(nil, err, c)
+		return
+	}
+	responses.GlobalResponseMRT(header, body, c)
+	return
 }

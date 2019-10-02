@@ -15,11 +15,8 @@ import (
 )
 
 var (
-	ErrorNoCoin                  = errors.New("coin not available")
 	ErrorRpcConnection           = errors.New("unable to perform rpc call")
 	ErrorRpcDeserialize          = errors.New("unable to deserialize rpc response")
-	ErrorNoRpcUserProvided       = errors.New("missing rpc username")
-	ErrorExternalStatusError     = errors.New("unable to get external source status")
 	ErrorUnableToSend            = errors.New("unable to send transaction")
 	ErrorUnableToValidateAddress = errors.New("unable to validate address")
 	ErrorNoHeaderSignature       = errors.New("no signature found in header")

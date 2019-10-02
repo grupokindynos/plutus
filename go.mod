@@ -8,7 +8,7 @@ require (
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-gonic/gin v1.4.0
 	github.com/gliderlabs/ssh v0.2.2
-	github.com/grupokindynos/common v0.0.0-20191002175401-1bd224e001d9
+	github.com/grupokindynos/common v0.0.0-20191002182547-4eac7138a118
 	github.com/heroku/x v0.0.9
 	github.com/joho/godotenv v1.3.0
 	github.com/stretchr/testify v1.4.0
