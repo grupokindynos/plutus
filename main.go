@@ -16,7 +16,7 @@ import (
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8082"
 	}
 	App := GetApp()
 	_ = App.Run(":" + port)
@@ -53,16 +53,14 @@ func ApplyRoutes(r *gin.Engine) {
 }
 
 func VerifyRequest(c *gin.Context, method func(params controllers.Params) (interface{}, error)) {
-	coin := c.Param("coin")
-	txid := c.Param("txid")
 	payload, err := mvt.VerifyRequest(c)
 	if err != nil {
 		responses.GlobalResponseNoAuth(c)
 		return
 	}
 	params := controllers.Params{
-		Coin: coin,
-		Txid: txid,
+		Coin: c.Param("coin"),
+		Txid: c.Param("txid"),
 		Body: payload,
 	}
 	response, err := method(params)
