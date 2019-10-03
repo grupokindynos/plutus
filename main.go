@@ -1,6 +1,9 @@
 package main
 
 import (
+	"net/http"
+	"os"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/common/responses"
@@ -9,8 +12,6 @@ import (
 	"github.com/grupokindynos/plutus/controllers"
 	_ "github.com/heroku/x/hmetrics/onload"
 	_ "github.com/joho/godotenv/autoload"
-	"net/http"
-	"os"
 )
 
 func main() {
@@ -46,6 +47,7 @@ func ApplyRoutes(r *gin.Engine) {
 		api.POST("/send/address", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.SendToAddress) })
 		api.POST("/send/cold", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.SendToColdStorage) })
 		api.POST("/send/exchange", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.SendToExchange) })
+		api.POST("/decode/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.DecodeRawTX) })
 	}
 	r.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not Found")
@@ -58,17 +60,20 @@ func VerifyRequest(c *gin.Context, method func(params controllers.Params) (inter
 		responses.GlobalResponseNoAuth(c)
 		return
 	}
+
 	params := controllers.Params{
 		Coin: c.Param("coin"),
 		Txid: c.Param("txid"),
 		Body: payload,
 	}
 	response, err := method(params)
+
 	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		responses.GlobalResponseError(nil, err, c)
 		return
 	}
 	responses.GlobalResponseMRT(header, body, c)
+
 	return
 }

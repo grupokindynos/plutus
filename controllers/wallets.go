@@ -4,7 +4,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/grupokindynos/common/coin-factory"
+	"io/ioutil"
+	"time"
+
+	coinfactory "github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/grupokindynos/common/plutus"
 	"github.com/grupokindynos/plutus/config"
@@ -12,8 +15,6 @@ import (
 	"github.com/grupokindynos/plutus/models/common"
 	"github.com/grupokindynos/plutus/models/rpc"
 	"github.com/ybbus/jsonrpc"
-	"io/ioutil"
-	"time"
 )
 
 type Params struct {
@@ -263,6 +264,27 @@ func (w *WalletController) GetTx(params Params) (interface{}, error) {
 	}
 	rpcClient := w.RPCClient(coinConfig)
 	resCall, err := rpcClient.Call(coinConfig.RpcMethods.GetRawTransaction, jsonrpc.Params(params.Txid, coinConfig.RpcMethods.GetRawTransactionVerbosity))
+	if err != nil {
+		return nil, config.ErrorUnableToValidateAddress
+	}
+	return resCall.Result, nil
+}
+
+func (w *WalletController) DecodeRawTX(params Params) (interface{}, error) {
+	coinConfig, err := coinfactory.GetCoin(params.Coin)
+
+	var txStr string
+	err = json.Unmarshal(params.Body, &txStr)
+	if err != nil {
+		return nil, err
+	}
+	err = coinfactory.CheckCoinKeys(coinConfig)
+	if err != nil {
+		return nil, err
+	}
+	rpcClient := w.RPCClient(coinConfig)
+	resCall, err := rpcClient.Call(coinConfig.RpcMethods.DecodeRawTransaction, jsonrpc.Params(txStr))
+
 	if err != nil {
 		return nil, config.ErrorUnableToValidateAddress
 	}
