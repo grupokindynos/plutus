@@ -12,7 +12,7 @@ require (
 	github.com/gin-gonic/gin v1.4.0
 	github.com/gliderlabs/ssh v0.2.2
 	github.com/golang/protobuf v1.3.2 // indirect
-	github.com/grupokindynos/common v0.0.0-20191003154418-87f7424114e4
+	github.com/grupokindynos/common v0.0.0-20191004195159-880b46a3acc8
 	github.com/heroku/x v0.0.9
 	github.com/joho/godotenv v1.3.0
 	github.com/json-iterator/go v1.1.7 // indirect
