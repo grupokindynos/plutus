@@ -67,6 +67,10 @@ func VerifyRequest(c *gin.Context, method func(params controllers.Params) (inter
 		Body: payload,
 	}
 	response, err := method(params)
+	if err != nil {
+		responses.GlobalResponseError(nil, err, c)
+		return
+	}
 
 	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
