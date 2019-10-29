@@ -163,6 +163,7 @@ func (w *WalletController) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(SendToAddressData)
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
 		return nil, err
@@ -175,8 +176,7 @@ func (w *WalletController) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, config.ErrorUnableToSend
 	}
-	response := common.ResponseTxid{Txid: txid}
-	return response, nil
+	return txid, nil
 }
 
 func (w *WalletController) SendToColdStorage(params Params) (interface{}, error) {
