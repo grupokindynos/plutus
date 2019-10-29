@@ -158,7 +158,7 @@ func (w *WalletController) GetNodeStatus(params Params) (interface{}, error) {
 }
 
 func (w *WalletController) SendToAddress(params Params) (interface{}, error) {
-	var SendToAddressData common.SendAddressBodyReq
+	var SendToAddressData plutus.SendAddressBodyReq
 	err := json.Unmarshal(params.Body, &SendToAddressData)
 	if err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func (w *WalletController) SendToAddress(params Params) (interface{}, error) {
 }
 
 func (w *WalletController) SendToColdStorage(params Params) (interface{}, error) {
-	var SendToAddressData common.SendAddressInternalBodyReq
+	var SendToAddressData plutus.SendAddressInternalBodyReq
 	err := json.Unmarshal(params.Body, &SendToAddressData)
 	if err != nil {
 		return nil, err
@@ -202,7 +202,7 @@ func (w *WalletController) SendToColdStorage(params Params) (interface{}, error)
 }
 
 func (w *WalletController) SendToExchange(params Params) (interface{}, error) {
-	var SendToAddressData common.SendAddressBodyReq
+	var SendToAddressData plutus.SendAddressBodyReq
 	err := json.Unmarshal(params.Body, &SendToAddressData)
 	if err != nil {
 		return nil, err
