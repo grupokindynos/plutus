@@ -3,7 +3,6 @@ package controllers
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -163,7 +162,6 @@ func (w *WalletController) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(SendToAddressData)
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
 		return nil, err
@@ -172,7 +170,7 @@ func (w *WalletController) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
+	txid, err := w.Send(coinConfig, SendToAddressData.Address, SendToAddressData.Amount)
 	if err != nil {
 		return nil, config.ErrorUnableToSend
 	}
@@ -193,7 +191,7 @@ func (w *WalletController) SendToColdStorage(params Params) (interface{}, error)
 	if err != nil {
 		return nil, err
 	}
-	txid, err := w.Send(coinConfig, coinConfig.ColdAddress, fmt.Sprintf("%f", SendToAddressData.Amount))
+	txid, err := w.Send(coinConfig, coinConfig.ColdAddress, SendToAddressData.Amount)
 	if err != nil {
 		return nil, config.ErrorUnableToSend
 	}
@@ -215,7 +213,7 @@ func (w *WalletController) SendToExchange(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	txid, err := w.Send(coinConfig, SendToAddressData.Address, fmt.Sprintf("%f", SendToAddressData.Amount))
+	txid, err := w.Send(coinConfig, SendToAddressData.Address, SendToAddressData.Amount)
 	if err != nil {
 		return nil, config.ErrorUnableToSend
 	}
@@ -308,7 +306,7 @@ func (w *WalletController) RPCClient(coinConfig *coins.Coin) RPCClient {
 	return rpcClient
 }
 
-func (w *WalletController) Send(coinConfig *coins.Coin, address string, amount string) (string, error) {
+func (w *WalletController) Send(coinConfig *coins.Coin, address string, amount float64) (string, error) {
 	rpcClient := w.RPCClient(coinConfig)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.SendToAddress, jsonrpc.Params(address, amount))
 	if err != nil {
