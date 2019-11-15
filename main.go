@@ -1,14 +1,14 @@
 package main
 
 import (
+	"github.com/grupokindynos/common/responses"
+	"github.com/grupokindynos/common/tokens/mrt"
+	"github.com/grupokindynos/common/tokens/mvt"
 	"net/http"
 	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/grupokindynos/common/responses"
-	"github.com/grupokindynos/common/tokens/mrt"
-	"github.com/grupokindynos/common/tokens/mvt"
 	"github.com/grupokindynos/plutus/controllers"
 	_ "github.com/heroku/x/hmetrics/onload"
 	_ "github.com/joho/godotenv/autoload"
@@ -60,7 +60,6 @@ func VerifyRequest(c *gin.Context, method func(params controllers.Params) (inter
 		responses.GlobalResponseNoAuth(c)
 		return
 	}
-
 	params := controllers.Params{
 		Coin: c.Param("coin"),
 		Txid: c.Param("txid"),
@@ -78,6 +77,5 @@ func VerifyRequest(c *gin.Context, method func(params controllers.Params) (inter
 		return
 	}
 	responses.GlobalResponseMRT(header, body, c)
-
 	return
 }

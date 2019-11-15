@@ -1,4 +1,4 @@
-package rpc
+package models
 
 type GetBlockchainInfo struct {
 	Chain                string  `json:"chain"`
@@ -108,4 +108,35 @@ type ValidateAddress struct {
 		Name    string `json:"name"`
 		Purpose string `json:"purpose"`
 	} `json:"labels"`
+}
+
+type BitcoinDecodeTx struct {
+	Hash     string `json:"hash"`
+	Locktime int    `json:"locktime"`
+	Size     int    `json:"size"`
+	Txid     string `json:"txid"`
+	Version  int    `json:"version"`
+	Vin      []struct {
+		ScriptSig struct {
+			Asm string `json:"asm"`
+			Hex string `json:"hex"`
+		} `json:"scriptSig"`
+		Sequence    int      `json:"sequence"`
+		Txid        string   `json:"txid"`
+		Txinwitness []string `json:"txinwitness"`
+		Vout        int      `json:"vout"`
+	} `json:"vin"`
+	Vout []struct {
+		N            int `json:"n"`
+		ScriptPubKey struct {
+			Addresses []string `json:"addresses"`
+			Asm       string   `json:"asm"`
+			Hex       string   `json:"hex"`
+			ReqSigs   int      `json:"reqSigs"`
+			Type      string   `json:"type"`
+		} `json:"scriptPubKey"`
+		Value float64 `json:"value"`
+	} `json:"vout"`
+	Vsize  int `json:"vsize"`
+	Weight int `json:"weight"`
 }

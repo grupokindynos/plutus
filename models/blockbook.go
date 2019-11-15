@@ -1,4 +1,4 @@
-package blockbook
+package models
 
 import "time"
 
