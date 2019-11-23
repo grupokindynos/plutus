@@ -132,6 +132,7 @@ func (w *WalletController) GetAddress(params Params) (interface{}, error) {
 		return ethAccount, nil
 	}
 	tunnel := getNewTunnel(coinConfig)
+	defer tunnel.Close()
 	rpcClient := w.RPCClient(coinConfig, tunnel)
 	callRes, err := rpcClient.Call(coinConfig.RpcMethods.GetNewAddress, jsonrpc.Params(""))
 	if err != nil {
@@ -154,6 +155,7 @@ func (w *WalletController) GetNodeStatus(params Params) (interface{}, error) {
 		return nil, err
 	}
 	tunnel := getNewTunnel(coinConfig)
+	defer tunnel.Close()
 	rpcClient := w.RPCClient(coinConfig, tunnel)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.GetBlockchainInfo)
 	if err != nil {
@@ -268,6 +270,7 @@ func (w *WalletController) ValidateAddress(params Params) (interface{}, error) {
 		return nil, err
 	}
 	tunnel := getNewTunnel(coinConfig)
+	defer tunnel.Close()
 	rpcClient := w.RPCClient(coinConfig, tunnel)
 	resCall, err := rpcClient.Call(coinConfig.RpcMethods.ValidateAddress, jsonrpc.Params(ValidateAddressData.Address))
 	if err != nil {
@@ -294,6 +297,7 @@ func (w *WalletController) GetTx(params Params) (interface{}, error) {
 		return nil, err
 	}
 	tunnel := getNewTunnel(coinConfig)
+	defer tunnel.Close()
 	rpcClient := w.RPCClient(coinConfig, tunnel)
 	resCall, err := rpcClient.Call(coinConfig.RpcMethods.GetRawTransaction, jsonrpc.Params(params.Txid, coinConfig.RpcMethods.GetRawTransactionVerbosity))
 	if err != nil {
@@ -326,6 +330,7 @@ func (w *WalletController) DecodeRawTX(params Params) (interface{}, error) {
 		return tx, nil
 	} else {
 		tunnel := getNewTunnel(coinConfig)
+		defer tunnel.Close()
 		rpcClient := w.RPCClient(coinConfig, tunnel)
 		resCall, err := rpcClient.Call(coinConfig.RpcMethods.DecodeRawTransaction, jsonrpc.Params(rawTx))
 		if err != nil {
@@ -353,6 +358,7 @@ func (w *WalletController) RPCClient(coinConfig *coins.Coin, tunnel *config.SSHT
 
 func (w *WalletController) Send(coinConfig *coins.Coin, address string, amount float64) (string, error) {
 	tunnel := getNewTunnel(coinConfig)
+	defer tunnel.Close()
 	rpcClient := w.RPCClient(coinConfig, tunnel)
 	chainRes, err := rpcClient.Call(coinConfig.RpcMethods.SendToAddress, jsonrpc.Params(address, amount))
 	if err != nil {

@@ -4,6 +4,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/common/responses"
+	"github.com/grupokindynos/common/tokens/mrt"
+	"github.com/grupokindynos/common/tokens/mvt"
 	"github.com/grupokindynos/plutus/controllers"
 	_ "github.com/heroku/x/hmetrics/onload"
 	_ "github.com/joho/godotenv/autoload"
@@ -52,17 +54,27 @@ func ApplyRoutes(r *gin.Engine) {
 }
 
 func VerifyRequest(c *gin.Context, method func(params controllers.Params) (interface{}, error)) {
-	/*	payload, err := mvt.VerifyRequest(c)
-		if err != nil {
-			responses.GlobalResponseNoAuth(c)
-			return
-		}*/
+	payload, err := mvt.VerifyRequest(c)
+	if err != nil {
+		responses.GlobalResponseNoAuth(c)
+		return
+	}
 	params := controllers.Params{
 		Coin: c.Param("coin"),
 		Txid: c.Param("txid"),
-		Body: nil,
+		Body: payload,
 	}
 	response, err := method(params)
-	responses.GlobalResponseError(response, err, c)
+	if err != nil {
+		responses.GlobalResponseError(nil, err, c)
+		return
+	}
+
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		responses.GlobalResponseError(nil, err, c)
+		return
+	}
+	responses.GlobalResponseMRT(header, body, c)
 	return
 }
