@@ -2,13 +2,11 @@ package config
 
 import (
 	"crypto/aes"
-	"github.com/gliderlabs/ssh"
 	aesk "github.com/grupokindynos/common/aes"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"strconv"
 	"testing"
-	"time"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -64,18 +62,4 @@ func TestPrivateKeyErr(t *testing.T) {
 	privateKeyStr := "56Rl0LvcyZxr+av38CQD9P3xUeZ/CVlsxTAlMIlCrQ5oGWd6pG3VaHbfkwqNzG94rQF7p/eY3tvOPLyBZvuScVFgFnWZ5gxqp+aHVY5ltoTcGycolfwziXFlS2TJ3t5v/dgTw7hOhVKKiaDZIRonc5dt6I7exw5S0sg7TIiLgiOOqAkSE5xa0GwY3p6+N3jS5bjQHRWg4KHK65tu34AyQadhTbOm9l4dkgkoeHTE6G28nWv7iwsJRJHS3wWAgp0BftRayKSgqOxjMQOHHc8ithzWKLEsrwx/F1aYfX/F2kR6g0NK8Uf91dGJ5LHfOK1TmD/J"
 	auth := PrivateKey(privateKeyStr)
 	assert.Nil(t, auth)
-}
-
-func TestNewSSHTunnel(t *testing.T) {
-	go func() {
-		_ = ssh.ListenAndServe(":2222", nil)
-	}()
-	tunnel := NewSSHTunnel("localhost:2222", nil, "localhost")
-	assert.NotNil(t, tunnel)
-	go func() {
-		err := tunnel.Start()
-		assert.Nil(t, err)
-	}()
-	time.Sleep(100 * time.Millisecond)
-
 }

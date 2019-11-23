@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -19,11 +20,7 @@ var (
 	ErrorRpcDeserialize          = errors.New("unable to deserialize rpc response")
 	ErrorUnableToSend            = errors.New("unable to send transaction")
 	ErrorUnableToValidateAddress = errors.New("unable to validate address")
-	ErrorNoHeaderSignature       = errors.New("no signature found in header")
-	ErrorSignatureParse          = errors.New("could not parse header signature")
 	ErrorUnmarshal               = errors.New("unable to unmarshal object")
-	ErrorWrongMessage            = errors.New("signed message is not on known hosts")
-	ErrorInvalidPassword         = errors.New("could not decrypt using master password")
 	HttpClient                   = &http.Client{
 		Timeout: time.Second * 5,
 	}
@@ -55,72 +52,66 @@ func (endpoint *Endpoint) String() string {
 }
 
 type SSHTunnel struct {
-	Local  *Endpoint
-	Server *Endpoint
-	Remote *Endpoint
-	Config *ssh.ClientConfig
+	Local     *Endpoint
+	Server    *Endpoint
+	Remote    *Endpoint
+	Config    *ssh.ClientConfig
+	CloseChan chan interface{}
 }
 
-func (tunnel *SSHTunnel) Start() error {
+func (tunnel *SSHTunnel) Start(mainWg *sync.WaitGroup) error {
 	listener, err := net.Listen("tcp", tunnel.Local.String())
 	if err != nil {
 		return err
 	}
-	defer listener.Close()
+	mainWg.Done()
 	tunnel.Local.Port = listener.Addr().(*net.TCPAddr).Port
 	for {
-		errorChan := make(chan error)
 		conn, err := listener.Accept()
 		if err != nil {
 			return err
 		}
-		go func() {
-			err := tunnel.forward(conn)
-			if err != nil {
-				errorChan <- err
-				return
-			}
-		}()
-		select {
-		case err := <-errorChan:
-			return err
-		}
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go tunnel.forward(conn, &wg)
+		wg.Wait()
+		break
 	}
-}
-
-func (tunnel *SSHTunnel) forward(localConn net.Conn) error {
-	serverConn, err := ssh.Dial("tcp", tunnel.Server.String(), tunnel.Config)
+	err = listener.Close()
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (tunnel *SSHTunnel) forward(localConn net.Conn, wg *sync.WaitGroup) {
+	serverConn, err := ssh.Dial("tcp", tunnel.Server.String(), tunnel.Config)
+	if err != nil {
+		return
 	}
 	remoteConn, err := serverConn.Dial("tcp", tunnel.Remote.String())
 	if err != nil {
-		return err
+		return
 	}
-	copyConn := func(writer, reader net.Conn) error {
-		_, err = io.Copy(writer, reader)
-		if err != nil {
-			return err
-		}
-		return nil
+	copyConn := func(writer, reader net.Conn) {
+		_, _ = io.Copy(writer, reader)
 	}
-	errorChan := make(chan error)
 	go func() {
-		err := copyConn(localConn, remoteConn)
-		if err != nil {
-			errorChan <- err
-		}
+		copyConn(localConn, remoteConn)
 	}()
 	go func() {
-		err := copyConn(remoteConn, localConn)
-		if err != nil {
-			errorChan <- err
-		}
+		copyConn(remoteConn, localConn)
 	}()
-	select {
-	case err := <-errorChan:
-		return err
-	}
+	<-tunnel.CloseChan
+	_ = localConn.Close()
+	_ = serverConn.Close()
+	_ = remoteConn.Close()
+	wg.Done()
+}
+
+func (tunnel *SSHTunnel) Close() error {
+	tunnel.CloseChan <- struct{}{}
+	return nil
 }
 
 func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTunnel {
@@ -137,9 +128,10 @@ func NewSSHTunnel(tunnel string, auth ssh.AuthMethod, destination string) *SSHTu
 			},
 			Timeout: time.Second * 5,
 		},
-		Local:  localEndpoint,
-		Server: server,
-		Remote: NewEndpoint(destination),
+		Local:     localEndpoint,
+		Server:    server,
+		Remote:    NewEndpoint(destination),
+		CloseChan: make(chan interface{}),
 	}
 
 	return sshTunnel

@@ -217,6 +217,7 @@ func TestWalletController_GetTx2(t *testing.T) {
 func TestWalletController_RPCClient(t *testing.T) {
 	polis, err := coinfactory.GetCoin("polis")
 	assert.Nil(t, err)
-	rpcClient := wCtrl.RPCClient(polis)
+	tunnel := getNewTunnel(polis)
+	rpcClient := wCtrl.RPCClient(polis, tunnel)
 	assert.NotNil(t, rpcClient)
 }
