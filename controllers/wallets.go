@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
@@ -49,7 +48,6 @@ func (w *WalletController) GetInfo(params Params) (interface{}, error) {
 	}
 	defer func() {
 		if tunnel != nil {
-			fmt.Println(tunnel)
 			_ = tunnel.Close()
 		}
 	}()
@@ -123,7 +121,6 @@ func (w *WalletController) GetWalletInfo(params Params) (interface{}, error) {
 		}
 		defer func() {
 			if tunnel != nil {
-				fmt.Println(tunnel)
 				_ = tunnel.Close()
 			}
 		}()
@@ -149,7 +146,6 @@ func (w *WalletController) GetWalletInfo(params Params) (interface{}, error) {
 		}
 		defer func() {
 			if tunnel != nil {
-				fmt.Println(tunnel)
 				_ = tunnel.Close()
 			}
 		}()
@@ -193,7 +189,6 @@ func (w *WalletController) GetAddress(params Params) (interface{}, error) {
 	}
 	defer func() {
 		if tunnel != nil {
-			fmt.Println(tunnel)
 			_ = tunnel.Close()
 		}
 	}()
@@ -224,7 +219,6 @@ func (w *WalletController) GetNodeStatus(params Params) (interface{}, error) {
 	}
 	defer func() {
 		if tunnel != nil {
-			fmt.Println(tunnel)
 			_ = tunnel.Close()
 		}
 	}()
@@ -347,7 +341,6 @@ func (w *WalletController) ValidateAddress(params Params) (interface{}, error) {
 	}
 	defer func() {
 		if tunnel != nil {
-			fmt.Println(tunnel)
 			_ = tunnel.Close()
 		}
 	}()
@@ -382,7 +375,6 @@ func (w *WalletController) GetTx(params Params) (interface{}, error) {
 	}
 	defer func() {
 		if tunnel != nil {
-			fmt.Println(tunnel)
 			_ = tunnel.Close()
 		}
 	}()
@@ -423,7 +415,6 @@ func (w *WalletController) DecodeRawTX(params Params) (interface{}, error) {
 		}
 		defer func() {
 			if tunnel != nil {
-				fmt.Println(tunnel)
 				_ = tunnel.Close()
 			}
 		}()
@@ -459,7 +450,6 @@ func (w *WalletController) Send(coinConfig *coins.Coin, address string, amount f
 	}
 	defer func() {
 		if tunnel != nil {
-			fmt.Println(tunnel)
 			_ = tunnel.Close()
 		}
 	}()
