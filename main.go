@@ -37,8 +37,6 @@ func ApplyRoutes(r *gin.Engine) {
 	}))
 	{
 		walletsCtrl := controllers.WalletController{}
-		api.GET("/status/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetNodeStatus) })
-		api.GET("/info/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetInfo) })
 		api.GET("/balance/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetWalletInfo) })
 		api.GET("/tx/:coin/:txid", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetTx) })
 		api.GET("/address/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetAddress) })
