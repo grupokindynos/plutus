@@ -12,3 +12,8 @@ type AddressValidationBodyReq struct {
 type ResponseTxid struct {
 	Txid string `json:"txid"`
 }
+
+type AddrInfo struct {
+	Addr string
+	Path int
+}

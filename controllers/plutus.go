@@ -11,7 +11,6 @@ import (
 	"github.com/grupokindynos/common/plutus"
 	"github.com/grupokindynos/plutus/models"
 	"github.com/tyler-smith/go-bip39"
-	"github.com/ybbus/jsonrpc"
 	"os"
 	"strconv"
 )
@@ -22,18 +21,20 @@ type Params struct {
 	Txid string
 }
 
-type ERC20Call struct {
-	To   string `json:"to"`
-	Data string `json:"data"`
-}
-
 var ethAccount = "0x4dc011f9792d18cd67f5afa4f1678e9c6c4d8e0e"
 
-type RPCClient jsonrpc.RPCClient
+const addrGap = 50
 
-type WalletController struct{}
+type AddrInfo struct {
+	LastUsed int
+	AddrInfo []models.AddrInfo
+}
 
-func (w *WalletController) GetBalance(params Params) (interface{}, error) {
+type Controller struct {
+	Address map[string]AddrInfo
+}
+
+func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(params.Coin)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func (w *WalletController) GetBalance(params Params) (interface{}, error) {
 	return response, nil
 }
 
-func (w *WalletController) GetAddress(params Params) (interface{}, error) {
+func (c *Controller) GetAddress(params Params) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(params.Coin)
 	if err != nil {
 		return nil, err
@@ -77,21 +78,12 @@ func (w *WalletController) GetAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Get the last used address
-	blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
-	if err != nil {
-		return nil, err
-	}
-	info, err := blockBookWrap.GetXpub(acc.String())
-	if err != nil {
-		return nil, err
-	}
 	// Create a new xpub and derive the address from the hdwallet
 	directExtended, err := acc.Child(0)
 	if err != nil {
 		return nil, err
 	}
-	addrExtPub, err := directExtended.Child(uint32(info.UsedTokens + 1))
+	addrExtPub, err := directExtended.Child(uint32(c.Address[coinConfig.Tag].LastUsed + 1))
 	if err != nil {
 		return nil, err
 	}
@@ -99,10 +91,18 @@ func (w *WalletController) GetAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	newAddrInfo := AddrInfo{
+		LastUsed: c.Address[coinConfig.Tag].LastUsed + 1,
+		AddrInfo: c.Address[coinConfig.Tag].AddrInfo,
+	}
+	newAddrInfo.AddrInfo = append(newAddrInfo.AddrInfo, models.AddrInfo{
+		Addr: addr.String(), Path: c.Address[coinConfig.Tag].LastUsed + 1,
+	})
+	c.Address[coinConfig.Tag] = newAddrInfo
 	return addr.String(), nil
 }
 
-func (w *WalletController) SendToAddress(params Params) (interface{}, error) {
+func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	var SendToAddressData plutus.SendAddressBodyReq
 	err := json.Unmarshal(params.Body, &SendToAddressData)
 	if err != nil {
@@ -112,32 +112,11 @@ func (w *WalletController) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	txid, err := w.Send(coinConfig, SendToAddressData.Address, SendToAddressData.Amount)
-	if err != nil {
-		return nil, err
-	}
-	return txid, nil
+	fmt.Println(coinConfig)
+	return nil, nil
 }
 
-func (w *WalletController) SendToExchange(params Params) (interface{}, error) {
-	var SendToAddressData plutus.SendAddressBodyReq
-	err := json.Unmarshal(params.Body, &SendToAddressData)
-	if err != nil {
-		return nil, err
-	}
-	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
-	if err != nil {
-		return nil, err
-	}
-	txid, err := w.Send(coinConfig, SendToAddressData.Address, SendToAddressData.Amount)
-	if err != nil {
-		return nil, err
-	}
-	response := models.ResponseTxid{Txid: txid}
-	return response, nil
-}
-
-func (w *WalletController) ValidateAddress(params Params) (interface{}, error) {
+func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 	var ValidateAddressData models.AddressValidationBodyReq
 	err := json.Unmarshal(params.Body, &ValidateAddressData)
 	if err != nil {
@@ -147,11 +126,16 @@ func (w *WalletController) ValidateAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Print(coinConfig)
-	return nil, nil
+	var isMine bool
+	for _, addr := range c.Address[coinConfig.Tag].AddrInfo {
+		if addr.Addr == ValidateAddressData.Address {
+			isMine = true
+		}
+	}
+	return isMine, nil
 }
 
-func (w *WalletController) GetTx(params Params) (interface{}, error) {
+func (c *Controller) DecodeRawTX(params Params) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(params.Coin)
 	if err != nil {
 		return nil, err
@@ -160,18 +144,41 @@ func (w *WalletController) GetTx(params Params) (interface{}, error) {
 	return nil, nil
 }
 
-func (w *WalletController) DecodeRawTX(params Params) (interface{}, error) {
-	coinConfig, err := coinfactory.GetCoin(params.Coin)
+func (c *Controller) getAddr(coinConfig *coins.Coin) error {
+	acc, err := getAccFromMnemonic(coinConfig)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	fmt.Print(coinConfig)
-	return nil, nil
-}
-
-func (w *WalletController) Send(coinConfig *coins.Coin, address string, amount float64) (string, error) {
-	fmt.Print(coinConfig)
-	return "", nil
+	blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
+	if err != nil {
+		return err
+	}
+	info, err := blockBookWrap.GetXpub(acc.String())
+	if err != nil {
+		return err
+	}
+	var addrInfoSlice []models.AddrInfo
+	for i := info.UsedTokens; i < info.UsedTokens+addrGap; i++ {
+		directExtended, err := acc.Child(0)
+		if err != nil {
+			return err
+		}
+		addrExtPub, err := directExtended.Child(uint32(i))
+		if err != nil {
+			return err
+		}
+		addr, err := addrExtPub.Address(coinConfig.NetParams)
+		if err != nil {
+			return err
+		}
+		addrInfo := models.AddrInfo{Addr: addr.String(), Path: i}
+		addrInfoSlice = append(addrInfoSlice, addrInfo)
+	}
+	c.Address[coinConfig.Tag] = AddrInfo{
+		LastUsed: info.UsedTokens,
+		AddrInfo: addrInfoSlice,
+	}
+	return nil
 }
 
 func getAccFromMnemonic(coinConfig *coins.Coin) (*hdkeychain.ExtendedKey, error) {
@@ -196,4 +203,24 @@ func getAccFromMnemonic(coinConfig *coins.Coin) (*hdkeychain.ExtendedKey, error)
 		return nil, err
 	}
 	return accChild, nil
+}
+
+func NewPlutusController() *Controller {
+	ctrl := &Controller{
+		Address: make(map[string]AddrInfo),
+	}
+	// Here we handle only active coins
+	for _, coin := range coinfactory.Coins {
+		coinConf, err := coinfactory.GetCoin(coin.Tag)
+		if err != nil {
+			panic(err)
+		}
+		if coin.Tag == "DASH" || coin.Tag == "BTC" || coin.Tag == "POLIS" {
+			err := ctrl.getAddr(coinConf)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+	return ctrl
 }
