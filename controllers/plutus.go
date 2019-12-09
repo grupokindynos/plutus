@@ -1,9 +1,13 @@
 package controllers
 
 import (
+	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
@@ -135,13 +139,53 @@ func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 	return isMine, nil
 }
 
-func (c *Controller) DecodeRawTX(params Params) (interface{}, error) {
-	coinConfig, err := coinfactory.GetCoin(params.Coin)
+func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
+	var ValidateTxData models.TxValidationBodyReq
+	err := json.Unmarshal(params.Body, &ValidateTxData)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Print(coinConfig)
-	return nil, nil
+	value, err := btcutil.NewAmount(ValidateTxData.Amount)
+	if err != nil {
+		return nil, err
+	}
+	coinConfig, err := coinfactory.GetCoin(ValidateTxData.Coin)
+	if err != nil {
+		return nil, err
+	}
+	rawTxBytes, err := hex.DecodeString(ValidateTxData.RawTx)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := btcutil.NewTxFromBytes(rawTxBytes)
+	if err != nil {
+		return nil, err
+	}
+	var isValue, isAddress bool
+	for _, out := range tx.MsgTx().TxOut {
+		outAmount := btcutil.Amount(out.Value)
+		if outAmount == value {
+			isValue = true
+		}
+		for _, addr := range c.Address[coinConfig.Tag].AddrInfo {
+			Addr, err := btcutil.DecodeAddress(addr.Addr, coinConfig.NetParams)
+			if err != nil {
+				return nil, err
+			}
+			scriptAddr, err := txscript.PayToAddrScript(Addr)
+			if err != nil {
+				return nil, err
+			}
+			if bytes.Equal(scriptAddr, out.PkScript) {
+				isAddress = true
+			}
+		}
+	}
+	if isValue && isAddress {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
 
 func (c *Controller) getAddr(coinConfig *coins.Coin) error {

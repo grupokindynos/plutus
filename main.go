@@ -38,9 +38,9 @@ func ApplyRoutes(r *gin.Engine) {
 		ctrl := controllers.NewPlutusController()
 		api.GET("/balance/:coin", func(context *gin.Context) { VerifyRequest(context, ctrl.GetBalance) })
 		api.GET("/address/:coin", func(context *gin.Context) { VerifyRequest(context, ctrl.GetAddress) })
-		api.POST("/validate/address", func(context *gin.Context) { VerifyRequest(context, ctrl.ValidateAddress) })
+		api.POST("/validate/addr", func(context *gin.Context) { VerifyRequest(context, ctrl.ValidateAddress) })
+		api.POST("/validate/tx", func(context *gin.Context) { VerifyRequest(context, ctrl.ValidateRawTx) })
 		api.POST("/send/address", func(context *gin.Context) { VerifyRequest(context, ctrl.SendToAddress) })
-		api.POST("/decode/:coin", func(context *gin.Context) { VerifyRequest(context, ctrl.DecodeRawTX) })
 	}
 	r.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not Found")
