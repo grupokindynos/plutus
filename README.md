@@ -11,17 +11,13 @@ Plutus is a microservice API for ultra safe access to multiple cryptocurrency ho
 
 ## Deploy
 
-#### Heroku
-
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/grupokindynos/plutus)
-
 #### Docker
 
 To deploy to docker, simply pull the image
 ```
 docker pull kindynos/plutus:latest
 ```
-Create a new `.env` file with all the necessary environment variables defined on `app.json`
+Create a new `.env` file with all the necessary environment variables
 
 Run the docker image
 ```
