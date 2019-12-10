@@ -179,7 +179,7 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	utxos, err := blockBookWrap.GetUtxo(acc.String())
+	utxos, err := blockBookWrap.GetUtxo(acc.String(), false)
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +473,12 @@ func NewPlutusController() *Controller {
 				panic(err)
 			}
 		}
-		if coin.Tag == "DASH" || coin.Tag == "BTC" || coin.Tag == "POLIS" {
+		if coin.Tag == "DASH" ||
+			coin.Tag == "BTC" ||
+			coin.Tag == "POLIS" ||
+			coin.Tag == "DGB" ||
+			coin.Tag == "LTC" ||
+			coin.Tag == "XZC"{
 			err := ctrl.getAddrs(coinConf)
 			if err != nil {
 				panic(err)
