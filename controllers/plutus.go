@@ -5,8 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/grupokindynos/common/blockbook"
@@ -17,6 +19,7 @@ import (
 	"github.com/tyler-smith/go-bip39"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Params struct {
@@ -112,12 +115,132 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	value, err := btcutil.NewAmount(SendToAddressData.Amount)
+	if err != nil {
+		return nil, err
+	}
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(coinConfig)
-	return nil, nil
+	acc, err := getAccFromMnemonic(coinConfig)
+	if err != nil {
+		return nil, err
+	}
+	blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
+	if err != nil {
+		return nil, err
+	}
+	utxos, err := blockBookWrap.GetUtxo(acc.String())
+	if err != nil {
+		return nil, err
+	}
+	if len(utxos) == 0 {
+		return nil, errors.New("no balance available")
+	}
+	var Tx wire.MsgTx
+	var txVersion int32
+	if coinConfig.Tag == "POLIS" || coinConfig.Tag == "DASH" {
+		txVersion = 2
+	} else {
+		txVersion = 1
+	}
+	var availableAmount btcutil.Amount
+	var changeAddrPubKeyHash string
+	// Add the inputs without signatures
+	for i, utxo := range utxos {
+		if i == 0 {
+			changeAddrPubKeyHash = utxo.Address
+		}
+		intValue, err := strconv.ParseInt(utxo.Value, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		utxoAmount := btcutil.Amount(intValue)
+		availableAmount += utxoAmount
+		txidHash, err := chainhash.NewHashFromStr(utxo.Txid)
+		if err != nil {
+			return nil, err
+		}
+		prevOut := wire.NewOutPoint(txidHash, uint32(utxo.Vout))
+		in := wire.NewTxIn(prevOut, nil, nil)
+		Tx.AddTxIn(in)
+	}
+	// Retrieve information for outputs
+	payAddr, err := btcutil.DecodeAddress(SendToAddressData.Address, coinConfig.NetParams)
+	changeAddr, err := btcutil.DecodeAddress(changeAddrPubKeyHash, coinConfig.NetParams)
+	pkScriptPay, err := txscript.PayToAddrScript(payAddr)
+	pkScriptChange, err := txscript.PayToAddrScript(changeAddr)
+	txOut := &wire.TxOut{
+		Value:    int64(value.ToUnit(btcutil.AmountSatoshi)),
+		PkScript: pkScriptPay,
+	}
+	fee, err := blockBookWrap.GetFee("2")
+	if err != nil {
+		return nil, err
+	}
+	var feeAmount btcutil.Amount
+	if fee.Result == "-1" {
+		feeAmount = btcutil.Amount(2000)
+	} else {
+		feeParse, err := strconv.ParseFloat(fee.Result, 64)
+		if err != nil {
+			return nil, err
+		}
+		feeAmount, err = btcutil.NewAmount(feeParse)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// Instead of calculate we just hardcode a normal TxSize (400 byte should be enough)
+	payingFee := (feeAmount * 400) / 1024
+	txOutChange := &wire.TxOut{
+		Value:    int64(((availableAmount - value) - payingFee).ToUnit(btcutil.AmountSatoshi)),
+		PkScript: pkScriptChange,
+	}
+	Tx.AddTxOut(txOut)
+	Tx.AddTxOut(txOutChange)
+	Tx.Version = txVersion
+	// Create the signatures
+	for i, utxo := range utxos {
+		utxoPrevOutHash, err := chainhash.NewHashFromStr(utxo.Txid)
+		if err != nil {
+			return nil, err
+		}
+		path := strings.Split(utxo.Path, "/")
+		pathParse, err := strconv.ParseInt(path[5], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		privKey, err := getPrivKeyFromPath(coinConfig, uint32(pathParse))
+		if err != nil {
+			return nil, err
+		}
+		addr, err := btcutil.DecodeAddress(utxo.Address, coinConfig.NetParams)
+		if err != nil {
+			return nil, err
+		}
+		subscript, err := txscript.PayToAddrScript(addr)
+		if err != nil {
+			return nil, err
+		}
+		sigScript, err := txscript.SignatureScript(&Tx, i, subscript, txscript.SigHashSingle, privKey, true)
+		if err != nil {
+			return nil, err
+		}
+		for _, in := range Tx.TxIn {
+			if in.PreviousOutPoint.Hash.IsEqual(utxoPrevOutHash) {
+				in.SignatureScript = sigScript
+			}
+		}
+	}
+	buf := bytes.NewBuffer([]byte{})
+	err = Tx.BtcEncode(buf, 0, wire.BaseEncoding)
+	if err != nil {
+		return nil, err
+	}
+	rawTx := hex.EncodeToString(buf.Bytes())
+	return blockBookWrap.SendTx(rawTx)
 }
 
 func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
@@ -188,7 +311,7 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 	}
 }
 
-func (c *Controller) getAddr(coinConfig *coins.Coin) error {
+func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
 	acc, err := getAccFromMnemonic(coinConfig)
 	if err != nil {
 		return err
@@ -249,6 +372,38 @@ func getAccFromMnemonic(coinConfig *coins.Coin) (*hdkeychain.ExtendedKey, error)
 	return accChild, nil
 }
 
+func getPrivKeyFromPath(coinConfig *coins.Coin, path uint32) (*btcec.PrivateKey, error) {
+	if coinConfig.Mnemonic == "" {
+		return nil, errors.New("the coin is not available")
+	}
+	seed := bip39.NewSeed(coinConfig.Mnemonic, os.Getenv("MNEMONIC_PASSWORD"))
+	mKey, err := hdkeychain.NewMaster(seed, coinConfig.NetParams)
+	if err != nil {
+		return nil, err
+	}
+	purposeChild, err := mKey.Child(hdkeychain.HardenedKeyStart + 44)
+	if err != nil {
+		return nil, err
+	}
+	coinType, err := purposeChild.Child(hdkeychain.HardenedKeyStart + coinConfig.NetParams.HDCoinType)
+	if err != nil {
+		return nil, err
+	}
+	accChild, err := coinType.Child(hdkeychain.HardenedKeyStart + 0)
+	if err != nil {
+		return nil, err
+	}
+	directChild, err := accChild.Child(0)
+	if err != nil {
+		return nil, err
+	}
+	privKeyChild, err := directChild.Child(path)
+	if err != nil {
+		return nil, err
+	}
+	return privKeyChild.ECPrivKey()
+}
+
 func NewPlutusController() *Controller {
 	ctrl := &Controller{
 		Address: make(map[string]AddrInfo),
@@ -260,7 +415,7 @@ func NewPlutusController() *Controller {
 			panic(err)
 		}
 		if coin.Tag == "DASH" || coin.Tag == "BTC" || coin.Tag == "POLIS" {
-			err := ctrl.getAddr(coinConf)
+			err := ctrl.getAddrs(coinConf)
 			if err != nil {
 				panic(err)
 			}
