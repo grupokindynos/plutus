@@ -16,7 +16,7 @@ import (
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8081"
 	}
 	App := GetApp()
 	_ = App.Run(":" + port)
@@ -60,7 +60,6 @@ func VerifyRequest(c *gin.Context, method func(params controllers.Params) (inter
 		Body: payload,
 	}
 	response, err := method(params)
-	responses.GlobalResponseError(response, err, c)
 	if err != nil {
 		responses.GlobalResponseError(nil, err, c)
 		return

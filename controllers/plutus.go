@@ -46,31 +46,66 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	acc, err := getAccFromMnemonic(coinConfig)
-	if err != nil {
-		return nil, err
-	}
 	blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
 	if err != nil {
 		return nil, err
 	}
-	info, err := blockBookWrap.GetXpub(acc.String())
-	if err != nil {
-		return nil, err
+	if !coinConfig.Token && coinConfig.Tag != "ETH" {
+		acc, err := getAccFromMnemonic(coinConfig)
+		if err != nil {
+			return nil, err
+		}
+		info, err := blockBookWrap.GetXpub(acc.String())
+		if err != nil {
+			return nil, err
+		}
+		confirmed, err := strconv.ParseFloat(info.Balance, 64)
+		if err != nil {
+			return nil, err
+		}
+		unconfirmed, err := strconv.ParseFloat(info.UnconfirmedBalance, 64)
+		response := plutus.Balance{
+			Confirmed:   confirmed / 1e8,
+			Unconfirmed: unconfirmed / 1e8,
+		}
+		return response, nil
+	} else {
+		info, err := blockBookWrap.GetEthAddress(ethAccount)
+		if err != nil {
+			return nil, err
+		}
+		if coinConfig.Token {
+			var tokenInfo *blockbook.EthTokens
+			for _, token := range info.Tokens {
+				if coinConfig.Contract == token.Contract {
+					tokenInfo = &token
+				}
+			}
+			if tokenInfo == nil {
+				response := plutus.Balance{
+					Confirmed: 0,
+				}
+				return response, nil
+			}
+			balance, err := strconv.ParseFloat(tokenInfo.Balance, 64)
+			if err != nil {
+				return nil, err
+			}
+			response := plutus.Balance{
+				Confirmed: balance,
+			}
+			return response, nil
+		} else {
+			balance, err := strconv.ParseFloat(info.Balance, 64)
+			if err != nil {
+				return nil, err
+			}
+			response := plutus.Balance{
+				Confirmed: balance / 1e18,
+			}
+			return response, nil
+		}
 	}
-	confirmed, err := strconv.ParseFloat(info.Balance, 64)
-	if err != nil {
-		return nil, err
-	}
-	unconfirmed, err := strconv.ParseFloat(info.UnconfirmedBalance, 64)
-	if err != nil {
-		return nil, err
-	}
-	response := plutus.Balance{
-		Confirmed:   confirmed,
-		Unconfirmed: unconfirmed,
-	}
-	return response, nil
 }
 
 func (c *Controller) GetAddress(params Params) (interface{}, error) {
@@ -263,15 +298,12 @@ func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 }
 
 func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
-	var ValidateTxData models.TxValidationBodyReq
+	var ValidateTxData plutus.ValidateRawTxReq
 	err := json.Unmarshal(params.Body, &ValidateTxData)
 	if err != nil {
 		return nil, err
 	}
-	value, err := btcutil.NewAmount(ValidateTxData.Amount)
-	if err != nil {
-		return nil, err
-	}
+	value := btcutil.Amount(ValidateTxData.Amount)
 	coinConfig, err := coinfactory.GetCoin(ValidateTxData.Coin)
 	if err != nil {
 		return nil, err
