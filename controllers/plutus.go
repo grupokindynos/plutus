@@ -30,7 +30,7 @@ type Params struct {
 
 var ethAccount = "0x4dc011f9792d18cd67f5afa4f1678e9c6c4d8e0e"
 
-const addrGap = 50
+const addrGap = 20
 
 type AddrInfo struct {
 	LastUsed int
@@ -326,19 +326,11 @@ func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
 	}
 	var addrInfoSlice []models.AddrInfo
 	for i := info.UsedTokens; i < info.UsedTokens+addrGap; i++ {
-		directExtended, err := acc.Child(0)
+		addr, err := getPubKeyHashFromPath(acc, coinConfig, uint32(i))
 		if err != nil {
 			return err
 		}
-		addrExtPub, err := directExtended.Child(uint32(i))
-		if err != nil {
-			return err
-		}
-		addr, err := addrExtPub.Address(coinConfig.NetParams)
-		if err != nil {
-			return err
-		}
-		addrInfo := models.AddrInfo{Addr: addr.String(), Path: i}
+		addrInfo := models.AddrInfo{Addr: addr, Path: i}
 		addrInfoSlice = append(addrInfoSlice, addrInfo)
 	}
 	c.Address[coinConfig.Tag] = AddrInfo{
@@ -370,6 +362,22 @@ func getAccFromMnemonic(coinConfig *coins.Coin) (*hdkeychain.ExtendedKey, error)
 		return nil, err
 	}
 	return accChild, nil
+}
+
+func getPubKeyHashFromPath(acc *hdkeychain.ExtendedKey, coinConfig *coins.Coin, path uint32) (string, error) {
+	directExtended, err := acc.Child(0)
+	if err != nil {
+		return "", err
+	}
+	addrExtPub, err := directExtended.Child(path)
+	if err != nil {
+		return "", err
+	}
+	addr, err := addrExtPub.Address(coinConfig.NetParams)
+	if err != nil {
+		return "", err
+	}
+	return addr.String(), nil
 }
 
 func getPrivKeyFromPath(coinConfig *coins.Coin, path uint32) (*btcec.PrivateKey, error) {
