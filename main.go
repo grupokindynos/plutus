@@ -36,17 +36,12 @@ func ApplyRoutes(r *gin.Engine) {
 		authUser: authPassword,
 	}))
 	{
-		walletsCtrl := controllers.WalletController{}
-		api.GET("/status/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetNodeStatus) })
-		api.GET("/info/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetInfo) })
-		api.GET("/balance/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetWalletInfo) })
-		api.GET("/tx/:coin/:txid", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetTx) })
-		api.GET("/address/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.GetAddress) })
-		api.POST("/validate/address", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.ValidateAddress) })
-		api.POST("/send/address", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.SendToAddress) })
-		api.POST("/send/cold", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.SendToColdStorage) })
-		api.POST("/send/exchange", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.SendToExchange) })
-		api.POST("/decode/:coin", func(context *gin.Context) { VerifyRequest(context, walletsCtrl.DecodeRawTX) })
+		ctrl := controllers.NewPlutusController()
+		api.GET("/balance/:coin", func(context *gin.Context) { VerifyRequest(context, ctrl.GetBalance) })
+		api.GET("/address/:coin", func(context *gin.Context) { VerifyRequest(context, ctrl.GetAddress) })
+		api.POST("/validate/addr", func(context *gin.Context) { VerifyRequest(context, ctrl.ValidateAddress) })
+		api.POST("/validate/tx", func(context *gin.Context) { VerifyRequest(context, ctrl.ValidateRawTx) })
+		api.POST("/send/address", func(context *gin.Context) { VerifyRequest(context, ctrl.SendToAddress) })
 	}
 	r.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not Found")
@@ -65,11 +60,11 @@ func VerifyRequest(c *gin.Context, method func(params controllers.Params) (inter
 		Body: payload,
 	}
 	response, err := method(params)
+	responses.GlobalResponseError(response, err, c)
 	if err != nil {
 		responses.GlobalResponseError(nil, err, c)
 		return
 	}
-
 	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
 	if err != nil {
 		responses.GlobalResponseError(nil, err, c)

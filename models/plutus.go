@@ -9,6 +9,18 @@ type AddressValidationBodyReq struct {
 	Coin    string `json:"coin"`
 }
 
+type TxValidationBodyReq struct {
+	Coin    string  `json:"coin"`
+	RawTx   string  `json:"raw_tx"`
+	Amount  float64 `json:"amount"`
+	Address string  `json:"address"`
+}
+
 type ResponseTxid struct {
 	Txid string `json:"txid"`
+}
+
+type AddrInfo struct {
+	Addr string
+	Path int
 }
