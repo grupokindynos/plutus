@@ -46,16 +46,20 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
-	if err != nil {
-		return nil, err
-	}
 	if !coinConfig.Token && coinConfig.Tag != "ETH" {
+		blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
+		if err != nil {
+			return nil, err
+		}
 		acc, err := getAccFromMnemonic(coinConfig)
 		if err != nil {
 			return nil, err
 		}
-		info, err := blockBookWrap.GetXpub(acc.String())
+		pub, err := acc.Neuter()
+		if err != nil {
+			return nil, err
+		}
+		info, err := blockBookWrap.GetXpub(pub.String())
 		if err != nil {
 			return nil, err
 		}
@@ -70,6 +74,14 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 		}
 		return response, nil
 	} else {
+		ethConfig, err := coinfactory.GetCoin("ETH")
+		if err != nil {
+			return nil, err
+		}
+		blockBookWrap, err := blockbook.NewBlockBookWrapper(ethConfig.BlockExplorer)
+		if err != nil {
+			return nil, err
+		}
 		info, err := blockBookWrap.GetEthAddress(ethAccount)
 		if err != nil {
 			return nil, err
