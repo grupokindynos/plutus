@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -465,6 +466,12 @@ func NewPlutusController() *Controller {
 		coinConf, err := coinfactory.GetCoin(coin.Tag)
 		if err != nil {
 			panic(err)
+		}
+		if coin.Tag == "POLIS" {
+			err = chaincfg.Register(coinConf.NetParams)
+			if err != nil {
+				panic(err)
+			}
 		}
 		if coin.Tag == "DASH" || coin.Tag == "BTC" || coin.Tag == "POLIS" {
 			err := ctrl.getAddrs(coinConf)
