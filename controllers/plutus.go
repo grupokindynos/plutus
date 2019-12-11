@@ -223,7 +223,7 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 		Value:    int64(value.ToUnit(btcutil.AmountSatoshi)),
 		PkScript: pkScriptPay,
 	}
-	fee, err := blockBookWrap.GetFee("2")
+	fee, err := blockBookWrap.GetFee("6")
 	if err != nil {
 		return nil, err
 	}
@@ -239,12 +239,14 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	}
 	txSize := (len(Tx.TxIn) * 180) + (len(Tx.TxOut) * 34)
 	payingFee := btcutil.Amount((feeRate / 1024) * int64(txSize))
-	txOutChange := &wire.TxOut{
-		Value:    int64(((availableAmount - value) - payingFee).ToUnit(btcutil.AmountSatoshi)),
-		PkScript: pkScriptChange,
+	if availableAmount-payingFee-value > 0 {
+		txOutChange := &wire.TxOut{
+			Value:    int64(((availableAmount - value) - payingFee).ToUnit(btcutil.AmountSatoshi)),
+			PkScript: pkScriptChange,
+		}
+		Tx.AddTxOut(txOutChange)
 	}
 	Tx.AddTxOut(txOut)
-	Tx.AddTxOut(txOutChange)
 	Tx.Version = txVersion
 	// Create the signatures
 	for i, utxo := range utxos {
