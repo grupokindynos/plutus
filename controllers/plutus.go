@@ -227,21 +227,18 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	var feeAmount btcutil.Amount
+	var feeRate int64
 	if fee.Result == "-1" {
-		feeAmount = btcutil.Amount(2000)
+		feeRate = 2000
 	} else {
 		feeParse, err := strconv.ParseFloat(fee.Result, 64)
 		if err != nil {
 			return nil, err
 		}
-		feeAmount, err = btcutil.NewAmount(feeParse)
-		if err != nil {
-			return nil, err
-		}
+		feeRate = int64(feeParse * 1e8)
 	}
-	// Instead of calculate we just hardcode a normal TxSize (400 byte should be enough)
-	payingFee := (feeAmount * 400) / 1024
+	txSize := (len(Tx.TxIn) * 180) + (len(Tx.TxOut) * 34)
+	payingFee := btcutil.Amount((feeRate / 1024) * int64(txSize))
 	txOutChange := &wire.TxOut{
 		Value:    int64(((availableAmount - value) - payingFee).ToUnit(btcutil.AmountSatoshi)),
 		PkScript: pkScriptChange,
