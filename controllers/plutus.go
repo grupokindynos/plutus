@@ -470,12 +470,7 @@ func NewPlutusController() *Controller {
 				panic(err)
 			}
 		}
-		if coin.Tag == "DASH" ||
-			coin.Tag == "BTC" ||
-			coin.Tag == "POLIS" ||
-			coin.Tag == "DGB" ||
-			coin.Tag == "LTC" ||
-			coin.Tag == "XZC"{
+		if !coin.Token && coin.Tag != "ETH" {
 			err := ctrl.getAddrs(coinConf)
 			if err != nil {
 				panic(err)
