@@ -223,13 +223,21 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 		Value:    int64(value.ToUnit(btcutil.AmountSatoshi)),
 		PkScript: pkScriptPay,
 	}
-	fee, err := blockBookWrap.GetFee("6")
-	if err != nil {
-		return nil, err
+	var fee blockbook.Fee
+	if SendToAddressData.Coin == "BTC" {
+		fee, err = blockBookWrap.GetFee("4")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		fee, err = blockBookWrap.GetFee("2")
+		if err != nil {
+			return nil, err
+		}
 	}
 	var feeRate int64
 	if fee.Result == "-1" {
-		feeRate = 2000
+		feeRate = 4000
 	} else {
 		feeParse, err := strconv.ParseFloat(fee.Result, 64)
 		if err != nil {
