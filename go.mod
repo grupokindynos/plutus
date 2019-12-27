@@ -7,7 +7,7 @@ require (
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-gonic/gin v1.4.0
-	github.com/grupokindynos/common v0.0.0-20191210225125-ec00b1478d62
+	github.com/grupokindynos/common v0.0.0-20191222182434-1fb61ba6289e
 	github.com/heroku/x v0.0.14
 	github.com/joho/godotenv v1.3.0
 	github.com/tyler-smith/go-bip39 v1.0.2
