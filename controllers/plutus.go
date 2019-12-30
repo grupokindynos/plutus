@@ -245,7 +245,7 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 		}
 		feeRate = int64(feeParse * 1e8)
 	}
-	txSize := (len(Tx.TxIn) * 180) + (len(Tx.TxOut) * 34)
+	txSize := (len(Tx.TxIn) * 180) + (len(Tx.TxOut) * 34) + 124
 	payingFee := btcutil.Amount((feeRate / 1024) * int64(txSize))
 	if availableAmount-payingFee-value > 0 {
 		txOutChange := &wire.TxOut{
