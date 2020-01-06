@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -483,7 +484,7 @@ func NewPlutusController() *Controller {
 		if !coin.Token && coin.Tag != "ETH" {
 			err := ctrl.getAddrs(coinConf)
 			if err != nil {
-				panic(err)
+				fmt.Println(err)
 			}
 		}
 	}
