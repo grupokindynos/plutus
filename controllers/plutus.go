@@ -6,18 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/grupokindynos/common/plutus"
 	"github.com/grupokindynos/plutus/models"
+	"github.com/martinboehm/btcd/btcec"
+	"github.com/martinboehm/btcd/chaincfg/chainhash"
+	"github.com/martinboehm/btcd/txscript"
+	"github.com/martinboehm/btcd/wire"
+	"github.com/martinboehm/btcutil"
+	"github.com/martinboehm/btcutil/chaincfg"
+	"github.com/martinboehm/btcutil/hdkeychain"
 	"github.com/tyler-smith/go-bip39"
 	"os"
 	"strconv"
@@ -30,7 +30,7 @@ type Params struct {
 	Txid string
 }
 
-var ethAccount = "0x4dc011f9792d18cd67f5afa4f1678e9c6c4d8e0e"
+var ethAccount = ""
 
 const addrGap = 20
 
@@ -470,6 +470,14 @@ func NewPlutusController() *Controller {
 		Address: make(map[string]AddrInfo),
 	}
 	// Here we handle only active coins
+	btcConf, err := coinfactory.GetCoin("BTC")
+	if err != nil {
+		panic(err)
+	}
+	err = chaincfg.Register(btcConf.NetParams)
+	if err != nil {
+		panic(err)
+	}
 	for _, coin := range coinfactory.Coins {
 		coinConf, err := coinfactory.GetCoin(coin.Tag)
 		if err != nil {
