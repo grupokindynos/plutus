@@ -30,7 +30,7 @@ type Params struct {
 	Txid string
 }
 
-var ethAccount = ""
+var ethAccount = "0x363cf89578DcC1F820C636161C4dD7435e111108"
 
 const addrGap = 20
 
