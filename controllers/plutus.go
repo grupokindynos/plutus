@@ -345,6 +345,7 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 		}
 		for _, addr := range c.Address[coinConfig.Tag].AddrInfo {
 			Addr, err := btcutil.DecodeAddress(addr.Addr, coinConfig.NetParams)
+			fmt.Println(Addr, err)
 			if err != nil {
 				return nil, err
 			}
@@ -374,6 +375,7 @@ func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
 		return err
 	}
 	info, err := blockBookWrap.GetXpub(acc.String())
+
 	if err != nil {
 		return err
 	}
@@ -470,26 +472,16 @@ func NewPlutusController() *Controller {
 		Address: make(map[string]AddrInfo),
 	}
 	// Here we handle only active coins
-	btcConf, err := coinfactory.GetCoin("BTC")
-	if err != nil {
-		panic(err)
-	}
-	err = chaincfg.Register(btcConf.NetParams)
-	if err != nil {
-		panic(err)
-	}
 	for _, coin := range coinfactory.Coins {
 		coinConf, err := coinfactory.GetCoin(coin.Tag)
 		if err != nil {
 			panic(err)
 		}
-		if coin.Tag == "POLIS" {
+		if !coin.Token && coin.Tag != "ETH" {
 			err = chaincfg.Register(coinConf.NetParams)
 			if err != nil {
 				panic(err)
 			}
-		}
-		if !coin.Token && coin.Tag != "ETH" {
 			err := ctrl.getAddrs(coinConf)
 			if err != nil {
 				fmt.Println(err)
