@@ -237,7 +237,7 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 		}
 	}
 	var feeRate int64
-	if fee.Result == "-1" {
+	if fee.Result == "-1" || fee.Result == "0" {
 		feeRate = 4000
 	} else {
 		feeParse, err := strconv.ParseFloat(fee.Result, 64)
@@ -345,7 +345,6 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 		}
 		for _, addr := range c.Address[coinConfig.Tag].AddrInfo {
 			Addr, err := btcutil.DecodeAddress(addr.Addr, coinConfig.NetParams)
-			fmt.Println(Addr, err)
 			if err != nil {
 				return nil, err
 			}
@@ -478,6 +477,7 @@ func NewPlutusController() *Controller {
 			panic(err)
 		}
 		if !coin.Token && coin.Tag != "ETH" {
+			coinConf.NetParams.AddressMagicLen = 1
 			err = chaincfg.Register(coinConf.NetParams)
 			if err != nil {
 				panic(err)
