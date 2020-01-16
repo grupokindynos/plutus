@@ -20,6 +20,7 @@ import (
 	"github.com/martinboehm/btcutil/hdkeychain"
 	"github.com/tyler-smith/go-bip39"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -164,28 +165,44 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	value, err := btcutil.NewAmount(SendToAddressData.Amount)
-	if err != nil {
-		return nil, err
-	}
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
-		return nil, err
+		return "", err
+	}
+	var rawTx string
+	if coinConfig.Token || coinConfig.Tag == "ETH" {
+		rawTx, err = c.sendToAddressEth(SendToAddressData, coinConfig)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		rawTx, err = c.sendToAddress(SendToAddressData, coinConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return rawTx, nil
+}
+
+func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin) (string, error) {
+	value, err := btcutil.NewAmount(SendToAddressData.Amount)
+	if err != nil {
+		return "", err
 	}
 	acc, err := getAccFromMnemonic(coinConfig)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	utxos, err := blockBookWrap.GetUtxo(acc.String(), false)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if len(utxos) == 0 {
-		return nil, errors.New("no balance available")
+		return "", errors.New("no balance available")
 	}
 	var Tx wire.MsgTx
 	var txVersion int32
@@ -203,13 +220,13 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 		}
 		intValue, err := strconv.ParseInt(utxo.Value, 10, 64)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		utxoAmount := btcutil.Amount(intValue)
 		availableAmount += utxoAmount
 		txidHash, err := chainhash.NewHashFromStr(utxo.Txid)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		prevOut := wire.NewOutPoint(txidHash, uint32(utxo.Vout))
 		in := wire.NewTxIn(prevOut, nil, nil)
@@ -228,12 +245,12 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	if SendToAddressData.Coin == "BTC" {
 		fee, err = blockBookWrap.GetFee("4")
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 	} else {
 		fee, err = blockBookWrap.GetFee("2")
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 	}
 	var feeRate int64
@@ -242,7 +259,7 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	} else {
 		feeParse, err := strconv.ParseFloat(fee.Result, 64)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		feeRate = int64(feeParse * 1e8)
 	}
@@ -261,28 +278,28 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	for i, utxo := range utxos {
 		utxoPrevOutHash, err := chainhash.NewHashFromStr(utxo.Txid)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		path := strings.Split(utxo.Path, "/")
 		pathParse, err := strconv.ParseInt(path[5], 10, 64)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		privKey, err := getPrivKeyFromPath(coinConfig, uint32(pathParse))
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		addr, err := btcutil.DecodeAddress(utxo.Address, coinConfig.NetParams)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		subscript, err := txscript.PayToAddrScript(addr)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		sigScript, err := txscript.SignatureScript(&Tx, i, subscript, txscript.SigHashSingle, privKey, true)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		for _, in := range Tx.TxIn {
 			if in.PreviousOutPoint.Hash.IsEqual(utxoPrevOutHash) {
@@ -293,11 +310,16 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	buf := bytes.NewBuffer([]byte{})
 	err = Tx.BtcEncode(buf, 0, wire.BaseEncoding)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	rawTx := hex.EncodeToString(buf.Bytes())
 	return blockBookWrap.SendTx(rawTx)
 }
+
+func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin) (string, error) {
+	return "", nil
+}
+
 
 func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 	var ValidateAddressData models.AddressValidationBodyReq
@@ -308,6 +330,9 @@ func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(ValidateAddressData.Coin)
 	if err != nil {
 		return nil, err
+	}
+	if coinConfig.Token || coinConfig.Tag == "ETH" {
+		return reflect.DeepEqual(ValidateAddressData.Address, ethAccount), nil
 	}
 	var isMine bool
 	for _, addr := range c.Address[coinConfig.Tag].AddrInfo {
