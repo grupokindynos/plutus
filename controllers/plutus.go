@@ -50,7 +50,7 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	}
 	if !coinConfig.Info.Token && coinConfig.Info.Tag != "ETH" {
 		blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
-		acc, err := getAccFromMnemonic(coinConfig)
+		acc, err := getAccFromMnemonic(coinConfig, false)
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +124,7 @@ func (c *Controller) GetAddress(params Params) (interface{}, error) {
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
 		return ethAccount, nil
 	}
-	acc, err := getAccFromMnemonic(coinConfig)
+	acc, err := getAccFromMnemonic(coinConfig, false)
 	if err != nil {
 		return nil, err
 	}
@@ -182,12 +182,16 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 	if err != nil {
 		return "", err
 	}
-	acc, err := getAccFromMnemonic(coinConfig)
+	acc, err := getAccFromMnemonic(coinConfig, true)
+	if err != nil {
+		return "", err
+	}
+	accPub, err := acc.Neuter()
 	if err != nil {
 		return "", err
 	}
 	blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
-	utxos, err := blockBookWrap.GetUtxo(acc.String(), false)
+	utxos, err := blockBookWrap.GetUtxo(accPub.String(), false)
 	if err != nil {
 		return "", err
 	}
@@ -278,16 +282,12 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 	Tx.Version = txVersion
 	// Create the signatures
 	for i, utxo := range utxos {
-		utxoPrevOutHash, err := chainhash.NewHashFromStr(utxo.Txid)
-		if err != nil {
-			return "", err
-		}
 		path := strings.Split(utxo.Path, "/")
 		pathParse, err := strconv.ParseInt(path[5], 10, 64)
 		if err != nil {
 			return "", err
 		}
-		privKey, err := getPrivKeyFromPath(coinConfig, uint32(pathParse))
+		privKey, err := getPrivKeyFromPath(acc, uint32(pathParse))
 		if err != nil {
 			return "", err
 		}
@@ -303,11 +303,7 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 		if err != nil {
 			return "", err
 		}
-		for _, in := range Tx.TxIn {
-			if in.PreviousOutPoint.Hash.IsEqual(utxoPrevOutHash) {
-				in.SignatureScript = sigScript
-			}
-		}
+		Tx.TxIn[i].SignatureScript = sigScript
 	}
 	buf := bytes.NewBuffer([]byte{})
 	err = Tx.BtcEncode(buf, 0, wire.BaseEncoding)
@@ -391,7 +387,7 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 }
 
 func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
-	acc, err := getAccFromMnemonic(coinConfig)
+	acc, err := getAccFromMnemonic(coinConfig, false)
 	if err != nil {
 		return err
 	}
@@ -416,7 +412,7 @@ func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
 	return nil
 }
 
-func getAccFromMnemonic(coinConfig *coins.Coin) (*hdkeychain.ExtendedKey, error) {
+func getAccFromMnemonic(coinConfig *coins.Coin, priv bool) (*hdkeychain.ExtendedKey, error) {
 	if coinConfig.Mnemonic == "" {
 		return nil, errors.New("the coin is not available")
 	}
@@ -437,7 +433,11 @@ func getAccFromMnemonic(coinConfig *coins.Coin) (*hdkeychain.ExtendedKey, error)
 	if err != nil {
 		return nil, err
 	}
-	return accChild.Neuter()
+	if priv {
+		return accChild, nil
+	} else {
+		return accChild.Neuter()
+	}
 }
 
 func getPubKeyHashFromPath(acc *hdkeychain.ExtendedKey, coinConfig *coins.Coin, path uint32) (string, error) {
@@ -456,36 +456,16 @@ func getPubKeyHashFromPath(acc *hdkeychain.ExtendedKey, coinConfig *coins.Coin, 
 	return addr.String(), nil
 }
 
-func getPrivKeyFromPath(coinConfig *coins.Coin, path uint32) (*btcec.PrivateKey, error) {
-	if coinConfig.Mnemonic == "" {
-		return nil, errors.New("the coin is not available")
-	}
-	seed := bip39.NewSeed(coinConfig.Mnemonic, os.Getenv("MNEMONIC_PASSWORD"))
-	mKey, err := hdkeychain.NewMaster(seed, coinConfig.NetParams)
+func getPrivKeyFromPath(acc *hdkeychain.ExtendedKey, path uint32) (*btcec.PrivateKey, error) {
+	directExtended, err := acc.Child(0)
 	if err != nil {
 		return nil, err
 	}
-	purposeChild, err := mKey.Child(hdkeychain.HardenedKeyStart + 44)
+	accPath, err := directExtended.Child(path)
 	if err != nil {
 		return nil, err
 	}
-	coinType, err := purposeChild.Child(hdkeychain.HardenedKeyStart + coinConfig.NetParams.HDCoinType)
-	if err != nil {
-		return nil, err
-	}
-	accChild, err := coinType.Child(hdkeychain.HardenedKeyStart + 0)
-	if err != nil {
-		return nil, err
-	}
-	directChild, err := accChild.Child(0)
-	if err != nil {
-		return nil, err
-	}
-	privKeyChild, err := directChild.Child(path)
-	if err != nil {
-		return nil, err
-	}
-	return privKeyChild.ECPrivKey()
+	return accPath.ECPrivKey()
 }
 
 func NewPlutusController() *Controller {
@@ -501,15 +481,18 @@ func NewPlutusController() *Controller {
 			panic(err)
 		}
 		if !coin.Info.Token && coin.Info.Tag != "ETH" {
+			coin.NetParams.Net = wire.BitcoinNet(i)
 			if coin.Info.Tag == "XSG" {
 				coin.NetParams.AddressMagicLen = 2
 			} else {
 				coin.NetParams.AddressMagicLen = 1
 			}
-			coin.NetParams.Net = wire.BitcoinNet(i)
-			err = chaincfg.Register(coinConf.NetParams)
-			if err != nil {
-				panic(err)
+			registered := chaincfg.IsRegistered(coin.NetParams)
+			if !registered {
+				err := chaincfg.Register(coin.NetParams)
+				if err != nil {
+					panic(err)
+				}
 			}
 			err := ctrl.getAddrs(coinConf)
 			if err != nil {
