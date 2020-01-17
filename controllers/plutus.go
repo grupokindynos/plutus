@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
@@ -13,11 +12,11 @@ import (
 	"github.com/grupokindynos/plutus/models"
 	"github.com/martinboehm/btcd/btcec"
 	"github.com/martinboehm/btcd/chaincfg/chainhash"
-	"github.com/martinboehm/btcd/txscript"
 	"github.com/martinboehm/btcd/wire"
 	"github.com/martinboehm/btcutil"
 	"github.com/martinboehm/btcutil/chaincfg"
 	"github.com/martinboehm/btcutil/hdkeychain"
+	"github.com/martinboehm/btcutil/txscript"
 	"github.com/tyler-smith/go-bip39"
 	"os"
 	"reflect"
@@ -396,12 +395,8 @@ func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
 	if err != nil {
 		return err
 	}
-	accPub, err := acc.Neuter()
-	if err != nil {
-		return err
-	}
 	blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
-	info, err := blockBookWrap.GetXpub(accPub.String())
+	info, err := blockBookWrap.GetXpub(acc.String())
 	if err != nil {
 		return err
 	}
@@ -442,7 +437,7 @@ func getAccFromMnemonic(coinConfig *coins.Coin) (*hdkeychain.ExtendedKey, error)
 	if err != nil {
 		return nil, err
 	}
-	return accChild, nil
+	return accChild.Neuter()
 }
 
 func getPubKeyHashFromPath(acc *hdkeychain.ExtendedKey, coinConfig *coins.Coin, path uint32) (string, error) {
@@ -498,22 +493,27 @@ func NewPlutusController() *Controller {
 		Address: make(map[string]AddrInfo),
 	}
 	// Here we handle only active coins
-	chaincfg.RegisterBitcoinParams()
+	var i uint32
 	for _, coin := range coinfactory.Coins {
+		i += 1
 		coinConf, err := coinfactory.GetCoin(coin.Info.Tag)
 		if err != nil {
 			panic(err)
 		}
-		if coin.Info.Tag == "POLIS" {
+		if !coin.Info.Token && coin.Info.Tag != "ETH" {
+			if coin.Info.Tag == "XSG" {
+				coin.NetParams.AddressMagicLen = 2
+			} else {
+				coin.NetParams.AddressMagicLen = 1
+			}
+			coin.NetParams.Net = wire.BitcoinNet(i)
 			err = chaincfg.Register(coinConf.NetParams)
 			if err != nil {
 				panic(err)
 			}
-		}
-		if !coin.Info.Token && coin.Info.Tag != "ETH" {
 			err := ctrl.getAddrs(coinConf)
 			if err != nil {
-				fmt.Println(err)
+				panic(err)
 			}
 		}
 	}
