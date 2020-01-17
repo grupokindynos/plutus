@@ -56,7 +56,7 @@ var testXpup = []testData{
 func TestXpubGeneration(t *testing.T) {
 	for _, test := range testXpup {
 		test.coin.Mnemonic = testMnemonic
-		acc, err := getAccFromMnemonic(test.coin)
+		acc, err := getAccFromMnemonic(test.coin, true)
 		if err != nil {
 			panic(err)
 		}
@@ -76,7 +76,7 @@ func TestXpubGeneration(t *testing.T) {
 		if !equalAddr {
 			t.Error("addr doesn't match for " + test.coin.Info.Tag + " expected: " + test.addr + "got: " + pubKeyHash)
 		}
-		privKey, err := getPrivKeyFromPath(test.coin, test.path)
+		privKey, err := getPrivKeyFromPath(acc, test.path)
 		if err != nil {
 			panic(err)
 		}
