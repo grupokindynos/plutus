@@ -49,11 +49,8 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !coinConfig.Token && coinConfig.Tag != "ETH" {
-		blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
-		if err != nil {
-			return nil, err
-		}
+	if !coinConfig.Info.Token && coinConfig.Info.Tag != "ETH" {
+		blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
 		acc, err := getAccFromMnemonic(coinConfig)
 		if err != nil {
 			return nil, err
@@ -81,18 +78,15 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		blockBookWrap, err := blockbook.NewBlockBookWrapper(ethConfig.BlockExplorer)
-		if err != nil {
-			return nil, err
-		}
+		blockBookWrap := blockbook.NewBlockBookWrapper(ethConfig.Info.Blockbook)
 		info, err := blockBookWrap.GetEthAddress(ethAccount)
 		if err != nil {
 			return nil, err
 		}
-		if coinConfig.Token {
+		if coinConfig.Info.Token {
 			var tokenInfo *blockbook.EthTokens
 			for _, token := range info.Tokens {
-				if coinConfig.Contract == token.Contract {
+				if coinConfig.Info.Contract == token.Contract {
 					tokenInfo = &token
 				}
 			}
@@ -128,7 +122,7 @@ func (c *Controller) GetAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if coinConfig.Token || coinConfig.Tag == "ETH" {
+	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
 		return ethAccount, nil
 	}
 	acc, err := getAccFromMnemonic(coinConfig)
@@ -140,7 +134,7 @@ func (c *Controller) GetAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	addrExtPub, err := directExtended.Child(uint32(c.Address[coinConfig.Tag].LastUsed + 1))
+	addrExtPub, err := directExtended.Child(uint32(c.Address[coinConfig.Info.Tag].LastUsed + 1))
 	if err != nil {
 		return nil, err
 	}
@@ -149,13 +143,13 @@ func (c *Controller) GetAddress(params Params) (interface{}, error) {
 		return nil, err
 	}
 	newAddrInfo := AddrInfo{
-		LastUsed: c.Address[coinConfig.Tag].LastUsed + 1,
-		AddrInfo: c.Address[coinConfig.Tag].AddrInfo,
+		LastUsed: c.Address[coinConfig.Info.Tag].LastUsed + 1,
+		AddrInfo: c.Address[coinConfig.Info.Tag].AddrInfo,
 	}
 	newAddrInfo.AddrInfo = append(newAddrInfo.AddrInfo, models.AddrInfo{
-		Addr: addr.String(), Path: c.Address[coinConfig.Tag].LastUsed + 1,
+		Addr: addr.String(), Path: c.Address[coinConfig.Info.Tag].LastUsed + 1,
 	})
-	c.Address[coinConfig.Tag] = newAddrInfo
+	c.Address[coinConfig.Info.Tag] = newAddrInfo
 	return addr.String(), nil
 }
 
@@ -169,19 +163,19 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return "", err
 	}
-	var rawTx string
-	if coinConfig.Token || coinConfig.Tag == "ETH" {
-		rawTx, err = c.sendToAddressEth(SendToAddressData, coinConfig)
+	var txid string
+	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
+		txid, err = c.sendToAddressEth(SendToAddressData, coinConfig)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		rawTx, err = c.sendToAddress(SendToAddressData, coinConfig)
+		txid, err = c.sendToAddress(SendToAddressData, coinConfig)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return rawTx, nil
+	return txid, nil
 }
 
 func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin) (string, error) {
@@ -193,10 +187,7 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 	if err != nil {
 		return "", err
 	}
-	blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
-	if err != nil {
-		return "", err
-	}
+	blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
 	utxos, err := blockBookWrap.GetUtxo(acc.String(), false)
 	if err != nil {
 		return "", err
@@ -206,7 +197,7 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 	}
 	var Tx wire.MsgTx
 	var txVersion int32
-	if coinConfig.Tag == "POLIS" || coinConfig.Tag == "DASH" {
+	if coinConfig.Info.Tag == "POLIS" || coinConfig.Info.Tag == "DASH" {
 		txVersion = 2
 	} else {
 		txVersion = 1
@@ -234,9 +225,21 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 	}
 	// Retrieve information for outputs
 	payAddr, err := btcutil.DecodeAddress(SendToAddressData.Address, coinConfig.NetParams)
+	if err != nil {
+		return "", err
+	}
 	changeAddr, err := btcutil.DecodeAddress(changeAddrPubKeyHash, coinConfig.NetParams)
+	if err != nil {
+		return "", err
+	}
 	pkScriptPay, err := txscript.PayToAddrScript(payAddr)
+	if err != nil {
+		return "", err
+	}
 	pkScriptChange, err := txscript.PayToAddrScript(changeAddr)
+	if err != nil {
+		return "", err
+	}
 	txOut := &wire.TxOut{
 		Value:    int64(value.ToUnit(btcutil.AmountSatoshi)),
 		PkScript: pkScriptPay,
@@ -320,7 +323,6 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	return "", nil
 }
 
-
 func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 	var ValidateAddressData models.AddressValidationBodyReq
 	err := json.Unmarshal(params.Body, &ValidateAddressData)
@@ -331,11 +333,11 @@ func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if coinConfig.Token || coinConfig.Tag == "ETH" {
+	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
 		return reflect.DeepEqual(ValidateAddressData.Address, ethAccount), nil
 	}
 	var isMine bool
-	for _, addr := range c.Address[coinConfig.Tag].AddrInfo {
+	for _, addr := range c.Address[coinConfig.Info.Tag].AddrInfo {
 		if addr.Addr == ValidateAddressData.Address {
 			isMine = true
 		}
@@ -368,7 +370,7 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 		if outAmount == value {
 			isValue = true
 		}
-		for _, addr := range c.Address[coinConfig.Tag].AddrInfo {
+		for _, addr := range c.Address[coinConfig.Info.Tag].AddrInfo {
 			Addr, err := btcutil.DecodeAddress(addr.Addr, coinConfig.NetParams)
 			if err != nil {
 				return nil, err
@@ -394,12 +396,12 @@ func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
 	if err != nil {
 		return err
 	}
-	blockBookWrap, err := blockbook.NewBlockBookWrapper(coinConfig.BlockExplorer)
+	accPub, err := acc.Neuter()
 	if err != nil {
 		return err
 	}
-	info, err := blockBookWrap.GetXpub(acc.String())
-
+	blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
+	info, err := blockBookWrap.GetXpub(accPub.String())
 	if err != nil {
 		return err
 	}
@@ -412,7 +414,7 @@ func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
 		addrInfo := models.AddrInfo{Addr: addr, Path: i}
 		addrInfoSlice = append(addrInfoSlice, addrInfo)
 	}
-	c.Address[coinConfig.Tag] = AddrInfo{
+	c.Address[coinConfig.Info.Tag] = AddrInfo{
 		LastUsed: info.UsedTokens,
 		AddrInfo: addrInfoSlice,
 	}
@@ -496,17 +498,19 @@ func NewPlutusController() *Controller {
 		Address: make(map[string]AddrInfo),
 	}
 	// Here we handle only active coins
+	chaincfg.RegisterBitcoinParams()
 	for _, coin := range coinfactory.Coins {
-		coinConf, err := coinfactory.GetCoin(coin.Tag)
+		coinConf, err := coinfactory.GetCoin(coin.Info.Tag)
 		if err != nil {
 			panic(err)
 		}
-		if !coin.Token && coin.Tag != "ETH" {
-			coinConf.NetParams.AddressMagicLen = 1
+		if coin.Info.Tag == "POLIS" {
 			err = chaincfg.Register(coinConf.NetParams)
 			if err != nil {
 				panic(err)
 			}
+		}
+		if !coin.Info.Token && coin.Info.Tag != "ETH" {
 			err := ctrl.getAddrs(coinConf)
 			if err != nil {
 				fmt.Println(err)
