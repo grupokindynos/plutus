@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/google/martian/log"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
@@ -482,11 +484,7 @@ func NewPlutusController() *Controller {
 		}
 		if !coin.Info.Token && coin.Info.Tag != "ETH" {
 			coin.NetParams.Net = wire.BitcoinNet(i)
-			if coin.Info.Tag == "XSG" {
-				coin.NetParams.AddressMagicLen = 2
-			} else {
-				coin.NetParams.AddressMagicLen = 1
-			}
+			coin.NetParams.AddressMagicLen = 1
 			registered := chaincfg.IsRegistered(coin.NetParams)
 			if !registered {
 				err := chaincfg.Register(coin.NetParams)
@@ -496,7 +494,7 @@ func NewPlutusController() *Controller {
 			}
 			err := ctrl.getAddrs(coinConf)
 			if err != nil {
-				panic(err)
+				log.Infof("Error: %v, Coin: %v", err.Error(), coin.Info.Name)
 			}
 		}
 	}

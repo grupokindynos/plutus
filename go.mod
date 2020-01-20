@@ -5,7 +5,8 @@ go 1.13
 require (
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-gonic/gin v1.4.0
-	github.com/grupokindynos/common v0.0.0-20200117151840-9933d22df6a0
+	github.com/google/martian v2.1.0+incompatible
+	github.com/grupokindynos/common v0.0.0-20200120175750-e77c2d8e0f05
 	github.com/heroku/x v0.0.14
 	github.com/joho/godotenv v1.3.0
 	github.com/martinboehm/btcd v0.0.0-20190104121910-8e7c0427fee5

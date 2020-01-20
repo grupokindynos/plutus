@@ -19,11 +19,7 @@ func init() {
 		}
 		if !coinConf.Info.Token && coinConf.Info.Tag != "ETH" {
 			i += 1
-			if coinConf.Info.Tag == "XSG" {
-				coinConf.NetParams.AddressMagicLen = 2
-			} else {
-				coinConf.NetParams.AddressMagicLen = 1
-			}
+			coinConf.NetParams.AddressMagicLen = 1
 			coinConf.NetParams.Net = wire.BitcoinNet(i)
 			err := chaincfg.Register(coinConf.NetParams)
 			if err != nil {
@@ -37,11 +33,11 @@ func init() {
 var testMnemonic = "maximum potato bitter govern rebuild elegant nest boring note caution wedding exercise near chimney narrow"
 
 type testData struct {
-	coin     *coins.Coin
-	xpub string
-	path     uint32
-	privKey  string
-	addr     string
+	coin    *coins.Coin
+	xpub    string
+	path    uint32
+	privKey string
+	addr    string
 }
 
 var testXpup = []testData{
@@ -66,7 +62,7 @@ func TestXpubGeneration(t *testing.T) {
 		}
 		equalXpub := reflect.DeepEqual(test.xpub, accPub.String())
 		if !equalXpub {
-			t.Error("addr doesn't match for " + test.coin.Info.Tag + " expected: " + test.xpub + "got: " +  accPub.String())
+			t.Error("addr doesn't match for " + test.coin.Info.Tag + " expected: " + test.xpub + "got: " + accPub.String())
 		}
 		pubKeyHash, err := getPubKeyHashFromPath(acc, test.coin, test.path)
 		if err != nil {
