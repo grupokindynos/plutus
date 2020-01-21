@@ -201,7 +201,7 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 	}
 	var Tx wire.MsgTx
 	var txVersion int32
-	if coinConfig.Info.Tag == "POLIS" || coinConfig.Info.Tag == "DASH" {
+	if coinConfig.Info.Tag == "POLIS" || coinConfig.Info.Tag == "DASH" || coinConfig.Info.Tag == "GRS" {
 		txVersion = 2
 	} else {
 		txVersion = 1
