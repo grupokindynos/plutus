@@ -86,5 +86,5 @@ func TestXpubGeneration(t *testing.T) {
 		if !equalPrivKey {
 			t.Error("privKey doesn't match for " + test.coin.Info.Tag + " expected: " + test.privKey + " got: " + wif.String())
 		}
-		}
+	}
 }
