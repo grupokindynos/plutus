@@ -1,12 +1,11 @@
 package controllers
 
 import (
-	"encoding/hex"
+	"github.com/eabz/btcutil"
+	"github.com/eabz/btcutil/chaincfg"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/martinboehm/btcd/wire"
-	"github.com/martinboehm/btcutil/base58"
-	"github.com/martinboehm/btcutil/chaincfg"
 	"reflect"
 	"testing"
 )
@@ -78,19 +77,14 @@ func TestXpubGeneration(t *testing.T) {
 		if !equalAddr {
 			t.Error("addr doesn't match for " + test.coin.Info.Tag + " expected: " + test.addr + " got: " + pubKeyHash)
 		}
-		res, _, err := base58.CheckDecode(test.privKey, test.coin.NetParams.AddressMagicLen, test.coin.NetParams.Base58CksumHasher)
-		if err != nil {
-			panic(err)
-		}
-		expected := hex.EncodeToString(res[:len(res)-1])
 		privKey, err := getPrivKeyFromPath(acc, test.path)
+		wif, err := btcutil.NewWIF(privKey, test.coin.NetParams, true, test.coin.NetParams.Base58CksumHasher)
 		if err != nil {
 			panic(err)
 		}
-		result := hex.EncodeToString(privKey.Serialize())
-		equalPrivKey := reflect.DeepEqual(result, expected)
+		equalPrivKey := reflect.DeepEqual(test.privKey, wif.String())
 		if !equalPrivKey {
-			t.Error("privKey doesn't match for " + test.coin.Info.Tag + " expected: " + expected + " got: " + result)
+			t.Error("privKey doesn't match for " + test.coin.Info.Tag + " expected: " + test.privKey + " got: " + wif.String())
 		}
-	}
+		}
 }

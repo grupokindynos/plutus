@@ -5,6 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/eabz/btcutil"
+	"github.com/eabz/btcutil/chaincfg"
+	"github.com/eabz/btcutil/hdkeychain"
+	"github.com/eabz/btcutil/txscript"
 	"github.com/google/martian/log"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
@@ -14,10 +18,6 @@ import (
 	"github.com/martinboehm/btcd/btcec"
 	"github.com/martinboehm/btcd/chaincfg/chainhash"
 	"github.com/martinboehm/btcd/wire"
-	"github.com/martinboehm/btcutil"
-	"github.com/martinboehm/btcutil/chaincfg"
-	"github.com/martinboehm/btcutil/hdkeychain"
-	"github.com/martinboehm/btcutil/txscript"
 	"github.com/tyler-smith/go-bip39"
 	"os"
 	"reflect"
@@ -277,6 +277,7 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 			Value:    int64(((availableAmount - value) - payingFee).ToUnit(btcutil.AmountSatoshi)),
 			PkScript: pkScriptChange,
 		}
+
 		Tx.AddTxOut(txOutChange)
 	}
 	Tx.AddTxOut(txOut)
@@ -300,7 +301,7 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 		if err != nil {
 			return "", err
 		}
-		sigScript, err := txscript.SignatureScript(&Tx, i, subscript, txscript.SigHashSingle, privKey, true)
+		sigScript, err := txscript.SignatureScript(&Tx, i, subscript, txscript.SigHashAll, privKey, true)
 		if err != nil {
 			return "", err
 		}
