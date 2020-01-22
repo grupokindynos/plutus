@@ -45,8 +45,8 @@ github.com/dlespiau/covertool v0.0.0-20180314162135-b0c4c6d0583a/go.mod h1:/eQMc
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/eabz/btcutil v0.0.0-20200121225113-5a78fc2600d7 h1:wOptPNemN3F0O95x6nYOx/Xf11Gj2wrKcVJxPMG7wVw=
 github.com/eabz/btcutil v0.0.0-20200121225113-5a78fc2600d7/go.mod h1:If/0bFqCxbQJHG1OKA8SlNdkSKDBi0VYPAjta1t1uZM=
-github.com/eabz/btcutil v0.0.0-20200121231320-3ef88a1a6129 h1:/4G5LD1VVsQJyzKb+33X0wwEVUpsZ3krlsNmSfH1vII=
-github.com/eabz/btcutil v0.0.0-20200121231320-3ef88a1a6129/go.mod h1:If/0bFqCxbQJHG1OKA8SlNdkSKDBi0VYPAjta1t1uZM=
+github.com/eabz/btcutil v0.0.0-20200122160855-a9a14a65b356 h1:IOIpDfSDVIvHc7c20jg9PXML4+JciItiIwxAZiJdsn8=
+github.com/eabz/btcutil v0.0.0-20200122160855-a9a14a65b356/go.mod h1:If/0bFqCxbQJHG1OKA8SlNdkSKDBi0VYPAjta1t1uZM=
 github.com/envoyproxy/go-control-plane v0.6.9/go.mod h1:SBwIajubJHhxtWwsL9s8ss4safvEdbitLhGGK48rN6g=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=

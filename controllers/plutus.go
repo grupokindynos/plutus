@@ -301,7 +301,13 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 		if err != nil {
 			return "", err
 		}
-		sigScript, err := txscript.SignatureScript(&Tx, i, subscript, txscript.SigHashAll, privKey, true)
+		var sigHash txscript.SigHashHasher
+		if coinConfig.Info.Tag == "GRS" {
+			sigHash = txscript.Sha256
+		} else {
+			sigHash = txscript.Sha256d
+		}
+		sigScript, err := txscript.SignatureScript(&Tx, i, subscript, txscript.SigHashAll, privKey, true, sigHash)
 		if err != nil {
 			return "", err
 		}

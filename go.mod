@@ -3,7 +3,7 @@ module github.com/grupokindynos/plutus
 go 1.13
 
 require (
-	github.com/eabz/btcutil v0.0.0-20200121231320-3ef88a1a6129
+	github.com/eabz/btcutil v0.0.0-20200122160855-a9a14a65b356
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-gonic/gin v1.4.0
 	github.com/google/martian v2.1.0+incompatible
