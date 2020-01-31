@@ -5,10 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/eabz/btcutil"
 	"github.com/eabz/btcutil/chaincfg"
 	"github.com/eabz/btcutil/hdkeychain"
 	"github.com/eabz/btcutil/txscript"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/google/martian/log"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
@@ -18,11 +21,15 @@ import (
 	"github.com/martinboehm/btcd/btcec"
 	"github.com/martinboehm/btcd/chaincfg/chainhash"
 	"github.com/martinboehm/btcd/wire"
+	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/tyler-smith/go-bip39"
+	"math/big"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Params struct {
@@ -31,7 +38,10 @@ type Params struct {
 	Txid string
 }
 
-var ethAccount = "0x363cf89578DcC1F820C636161C4dD7435e111108"
+//var ethAccount = "0x363cf89578DcC1F820C636161C4dD7435e111108"
+var ethAccount = "0xC97316DBa300DcFe93A261B9481058C01e07C970"
+
+var myClient = &http.Client{Timeout: 10 * time.Second}
 
 const addrGap = 20
 
@@ -43,6 +53,31 @@ type AddrInfo struct {
 type Controller struct {
 	Address map[string]AddrInfo
 }
+
+type GasStation struct {
+	Fast        float64 `json:"fast"`
+	Fastest     float64 `json:"fastest"`
+	SafeLow     float64 `json:"safeLow"`
+	Average     float64 `json:"average"`
+	SafeLowWait float64 `json:"safeLowWait"`
+	AvgWait     float64 `json:"avgWait"`
+	FastWait    float64 `json:"fastWait"`
+	FastestWait float64 `json:"fastestWait"`
+}
+
+//**for testing only
+type NestedElement struct {
+	Address string  `json:"address"`
+	Coin    string  `json:"coin"`
+	Amount  float64 `json:"amount"`
+}
+type TestJ struct {
+	Coin          string `json:"coin"`
+	NestedElement `json:"body"`
+	Txid          string `json:"txid"`
+}
+
+//**end of testing block
 
 func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(params.Coin)
@@ -159,6 +194,12 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	//**only for testing block
+	var bobody TestJ
+	_ = json.Unmarshal(params.Body, &bobody)
+	SendToAddressData.Amount = bobody.Amount
+	SendToAddressData.Address = bobody.Address
+	//**end of testing block
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
 		return "", err
@@ -323,7 +364,88 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 }
 
 func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin) (string, error) {
-	return "", nil
+	//**generate a valid tx amount
+	value := big.NewInt(int64(SendToAddressData.Amount * 1000000000000000000))
+
+	//**get the senders address, public key and private key?
+	//acc, err := getAccFromMnemonic(coinConfig, true)
+	//if err != nil {
+	//	return "", err
+	//}
+	mnemonic := "roof stable huge chuckle where else sniff apology museum maze parade delay"
+	wallet, err := hdwallet.NewFromMnemonic(mnemonic)
+	if err != nil {
+		return "", err
+	}
+	path := hdwallet.MustParseDerivationPath("m/44'/60'/0'/0/0")
+	account, err := wallet.Derive(path, true)
+	if err != nil {
+		return "", err
+	}
+	ethAccount := account.Address.Hex()
+
+	blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
+
+	//** get the balance, check if its > 0
+	//if len(utxos) == 0 {
+	//	return "", errors.New("no balance available")
+	//}
+	info, err := blockBookWrap.GetEthAddress(ethAccount)
+	if err != nil {
+		return "", err
+	}
+	balance, err := strconv.ParseFloat(info.Balance, 64)
+	if err != nil {
+		return "", err
+	}
+	balance = balance / 1e18
+	if balance == 0 {
+		return "", errors.New("no balance available")
+	}
+	fmt.Println(balance)
+	nonce, err := strconv.ParseUint(info.Nonce, 0, 64)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println(nonce)
+
+	//** Retrieve information for outputs: out adrdress
+	//payAddr, err := btcutil.DecodeAddress(SendToAddressData.Address, coinConfig.NetParams)
+	//if err != nil {
+	//	return "", err
+	//}
+	toAddress := common.HexToAddress(SendToAddressData.Address)
+
+	//**calculate fee/gas cost, add the amount
+	gasLimit := uint64(21000)
+	gasStation := GasStation{}
+	_ = getJson("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
+	fmt.Println(gasStation)
+	gasPrice := big.NewInt(int64(1000000000 * (gasStation.Average / 10)))
+	fmt.Println(gasPrice)
+	var data []byte
+	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
+
+	// **sign and send
+	signedTx, err := wallet.SignTx(account, tx, nil)
+	if err != nil {
+		return "", err
+	}
+	ts := types.Transactions{signedTx}
+	rawTxBytes := ts.GetRlp(0)
+	rawTxHex := hex.EncodeToString(rawTxBytes)
+
+	return blockBookWrap.SendTx("0x" + rawTxHex)
+}
+
+func getJson(url string, target interface{}) error {
+	r, err := myClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	return json.NewDecoder(r.Body).Decode(target)
 }
 
 func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
