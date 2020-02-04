@@ -10,6 +10,7 @@ import (
 	"github.com/eabz/btcutil/chaincfg"
 	"github.com/eabz/btcutil/hdkeychain"
 	"github.com/eabz/btcutil/txscript"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/google/martian/log"
@@ -38,8 +39,7 @@ type Params struct {
 	Txid string
 }
 
-//var ethAccount = "0x363cf89578DcC1F820C636161C4dD7435e111108"
-var ethAccount = "0xC97316DBa300DcFe93A261B9481058C01e07C970"
+var ethWallet *hdwallet.Wallet
 
 var myClient = &http.Client{Timeout: 10 * time.Second}
 
@@ -113,8 +113,12 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+		acc, err := getEthAccFromMnemonic(coinConfig, false)
+		if err != nil {
+			return nil, err
+		}
 		blockBookWrap := blockbook.NewBlockBookWrapper(ethConfig.Info.Blockbook)
-		info, err := blockBookWrap.GetEthAddress(ethAccount)
+		info, err := blockBookWrap.GetEthAddress(acc.Address.Hex())
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +162,11 @@ func (c *Controller) GetAddress(params Params) (interface{}, error) {
 		return nil, err
 	}
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
-		return ethAccount, nil
+		acc, err := getEthAccFromMnemonic(coinConfig, false)
+		if err != nil {
+			return nil, err
+		}
+		return acc.Address.Hex(), nil
 	}
 	acc, err := getAccFromMnemonic(coinConfig, false)
 	if err != nil {
@@ -366,19 +374,8 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin) (string, error) {
 	//**generate a valid tx amount
 	value := big.NewInt(int64(SendToAddressData.Amount * 1000000000000000000))
-
 	//**get the senders address, public key and private key?
-	//acc, err := getAccFromMnemonic(coinConfig, true)
-	//if err != nil {
-	//	return "", err
-	//}
-	mnemonic := "roof stable huge chuckle where else sniff apology museum maze parade delay"
-	wallet, err := hdwallet.NewFromMnemonic(mnemonic)
-	if err != nil {
-		return "", err
-	}
-	path := hdwallet.MustParseDerivationPath("m/44'/60'/0'/0/0")
-	account, err := wallet.Derive(path, true)
+	account, err := getEthAccFromMnemonic(coinConfig, true)
 	if err != nil {
 		return "", err
 	}
@@ -399,15 +396,13 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 		return "", err
 	}
 	balance = balance / 1e18
-	if balance == 0 {
+	if balance == 0 || balance < SendToAddressData.Amount {
 		return "", errors.New("no balance available")
 	}
-	fmt.Println(balance)
 	nonce, err := strconv.ParseUint(info.Nonce, 0, 64)
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(nonce)
 
 	//** Retrieve information for outputs: out adrdress
 	//payAddr, err := btcutil.DecodeAddress(SendToAddressData.Address, coinConfig.NetParams)
@@ -420,14 +415,12 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	gasLimit := uint64(21000)
 	gasStation := GasStation{}
 	_ = getJson("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
-	fmt.Println(gasStation)
 	gasPrice := big.NewInt(int64(1000000000 * (gasStation.Average / 10)))
-	fmt.Println(gasPrice)
 	var data []byte
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
-
+	fmt.Println(account.Address.Hex())
 	// **sign and send
-	signedTx, err := wallet.SignTx(account, tx, nil)
+	signedTx, err := signEthTx(coinConfig, account, tx, nil)
 	if err != nil {
 		return "", err
 	}
@@ -459,7 +452,11 @@ func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 		return nil, err
 	}
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
-		return reflect.DeepEqual(ValidateAddressData.Address, ethAccount), nil
+		acc, err := getEthAccFromMnemonic(coinConfig, false)
+		if err != nil {
+			return nil, err
+		}
+		return reflect.DeepEqual(ValidateAddressData.Address, acc.Address.Hex()), nil
 	}
 	var isMine bool
 	for _, addr := range c.Address[coinConfig.Info.Tag].AddrInfo {
@@ -568,6 +565,38 @@ func getAccFromMnemonic(coinConfig *coins.Coin, priv bool) (*hdkeychain.Extended
 	} else {
 		return accChild.Neuter()
 	}
+}
+
+func getEthAccFromMnemonic(coinConfig *coins.Coin, saveWallet bool) (accounts.Account, error) {
+	if coinConfig.Mnemonic == "" {
+		return accounts.Account{}, errors.New("the coin is not available")
+	}
+	wallet, err := hdwallet.NewFromMnemonic(coinConfig.Mnemonic)
+	if err != nil {
+		return accounts.Account{}, err
+	}
+	path := hdwallet.MustParseDerivationPath("m/44'/60'/0'/0/0")
+	account, err := wallet.Derive(path, true)
+	if err != nil {
+		return accounts.Account{}, err
+	}
+	if saveWallet {
+		ethWallet = wallet
+	}
+	return account, nil
+}
+
+func signEthTx(coinConfig *coins.Coin, account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
+	if coinConfig.Mnemonic == "" {
+		return nil, errors.New("the coin is not available")
+	}
+
+	signedTx, err := ethWallet.SignTx(account, tx, chainID)
+	if err != nil {
+		return nil, err
+	}
+	return signedTx, nil
+
 }
 
 func getPubKeyHashFromPath(acc *hdkeychain.ExtendedKey, coinConfig *coins.Coin, path uint32) (string, error) {

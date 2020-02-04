@@ -1,14 +1,10 @@
 package controllers
 
 import (
-	"encoding/hex"
 	//"encoding/hex"
 	"fmt"
 	"github.com/eabz/btcutil"
 	"github.com/eabz/btcutil/chaincfg"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 	//"github.com/ethereum/go-ethereum/common"
 	//"github.com/ethereum/go-ethereum/core/types"
 	"github.com/grupokindynos/common/blockbook"
@@ -16,8 +12,6 @@ import (
 	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/grupokindynos/common/plutus"
 	"github.com/martinboehm/btcd/wire"
-	"github.com/miguelmota/go-ethereum-hdwallet"
-	"log"
 	//"math/big"
 	"reflect"
 	"strconv"
@@ -103,7 +97,6 @@ func TestXpubGeneration(t *testing.T) {
 	}
 }
 func TestEthBalance(t *testing.T) {
-	//var ethAccount = "0x363cf89578DcC1F820C636161C4dD7435e111108" //def
 	var acc3 = "0x931D387731bBbC988B312206c74F77D004D6B84b"
 	//var acc2 = "0x71c7656ec7ab88b098defb751b7401b5f6d8976f"
 	coinConfig, err := coinfactory.GetCoin("ETH")
@@ -118,9 +111,7 @@ func TestEthBalance(t *testing.T) {
 		fmt.Println(err)
 		panic(err)
 	}
-	fmt.Println("TEST 1")
-	fmt.Println(info)
-	fmt.Println(coinConfig.Info.Token)
+
 	if coinConfig.Info.Token {
 		var tokenInfo *blockbook.EthTokens
 		for _, token := range info.Tokens {
@@ -154,95 +145,4 @@ func TestEthBalance(t *testing.T) {
 		}
 		fmt.Println(response)
 	}
-}
-
-func TestSendEthtoAdress(t *testing.T) {
-	var SendToAddressData plutus.SendAddressBodyReq
-	coinConfig, err := coinfactory.GetCoin("ETH")
-	ethConfig, err := coinfactory.GetCoin("ETH")
-	if err != nil {
-		t.Error(err)
-	}
-	//**generate a valid tx amount
-	amount := 0.005
-	value := big.NewInt(int64(amount * 1000000000000000000))
-	fmt.Println("value ", value)
-	//value := big.NewInt(1000000000000000)
-
-	//**get the senders address, public key and private key?
-	coinConfig.Mnemonic = SendToAddressData.Address
-	mnemonic := "roof stable huge chuckle where else sniff apology museum maze parade delay"
-	wallet, err := hdwallet.NewFromMnemonic(mnemonic)
-	if err != nil {
-		log.Fatal(err)
-	}
-	path := hdwallet.MustParseDerivationPath("m/44'/60'/0'/0/0")
-	account, err := wallet.Derive(path, true)
-	if err != nil {
-		log.Fatal(err)
-	}
-	//path = hdwallet.MustParseDerivationPath("m/44'/60'/0'/0/1")
-	//account2, err := wallet.Derive(path, false)
-	fmt.Println(account.Address.Hex()) //
-	ethAccount := account.Address.Hex()
-
-	blockBookWrap := blockbook.NewBlockBookWrapper(ethConfig.Info.Blockbook)
-
-	//** get the balance, check if its > 0   and get the nonce
-	info, err := blockBookWrap.GetEthAddress(ethAccount)
-	if err != nil {
-		t.Error(err)
-	}
-	balance, err := strconv.ParseFloat(info.Balance, 64)
-	if err != nil {
-		t.Error(err)
-	}
-	balance = balance / 1e18
-	if balance == 0 {
-		t.Error("no balance available")
-	}
-	fmt.Println(balance)
-	nonce, err := strconv.ParseUint(info.Nonce, 0, 64)
-	if err != nil {
-		t.Error(err)
-	}
-	fmt.Println(info.Nonce)
-
-	//** Retrieve information for outputs: out address
-	//payAddr, err := btcutil.DecodeAddress(SendToAddressData.Address, coinConfig.NetParams)
-	//if err != nil {
-	//	return "", err
-	//}
-	toAddress := common.HexToAddress("0x673153460D01A22F9dAc129F2Ea59be3681921A4")
-
-	//**calculate fee/gas cost, add the amount, create transaction
-	gasLimit := uint64(21000)
-	gasStation := GasStation{}
-	_ = getJson("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
-	fmt.Println(gasStation)
-	gasPrice := big.NewInt(int64(1000000000 * (gasStation.Average / 10)))
-	fmt.Println(gasPrice)
-	var data []byte
-	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
-	fmt.Println("transaccion creada")
-
-	// **sign and send
-	signedTx, err := wallet.SignTx(account, tx, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("transaccion firmada", signedTx)
-
-	ts := types.Transactions{signedTx}
-	rawTxBytes := ts.GetRlp(0)
-	rawTxHex := hex.EncodeToString(rawTxBytes)
-
-	fmt.Println(rawTxHex)
-	res, err := blockBookWrap.SendTx("0x" + rawTxHex)
-	if err != nil {
-		t.Error(err)
-	}
-	fmt.Println("transaccion enviada")
-	fmt.Println(res)
-
 }

@@ -53,11 +53,9 @@ func VerifyRequest(c *gin.Context, method func(params controllers.Params) (inter
 	//	responses.GlobalResponseNoAuth(c)
 	//	return
 	//}
-	//fmt.Println("ente")
+
 	body, _ := ioutil.ReadAll(c.Request.Body)
-	//fmt.Println(string(body))
-	//
-	//[]byte(c.Param("body"))
+
 	params := controllers.Params{
 		Coin: c.Param("coin"),
 		Txid: c.Param("txid"),
