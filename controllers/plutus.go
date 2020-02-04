@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/google/martian/log"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
@@ -65,19 +66,19 @@ type GasStation struct {
 	FastestWait float64 `json:"fastestWait"`
 }
 
-//**for testing only
-type NestedElement struct {
-	Address string  `json:"address"`
-	Coin    string  `json:"coin"`
-	Amount  float64 `json:"amount"`
-}
-type TestJ struct {
-	Coin          string `json:"coin"`
-	NestedElement `json:"body"`
-	Txid          string `json:"txid"`
-}
-
-//**end of testing block
+////**for testing only
+//type NestedElement struct {
+//	Address string  `json:"address"`
+//	Coin    string  `json:"coin"`
+//	Amount  float64 `json:"amount"`
+//}
+//type TestJ struct {
+//	Coin          string `json:"coin"`
+//	NestedElement `json:"body"`
+//	Txid          string `json:"txid"`
+//}
+//
+////**end of testing block
 
 func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(params.Coin)
@@ -202,12 +203,12 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	//**only for testing block
-	var bobody TestJ
-	_ = json.Unmarshal(params.Body, &bobody)
-	SendToAddressData.Amount = bobody.Amount
-	SendToAddressData.Address = bobody.Address
-	//**end of testing block
+	////**only for testing block
+	//var bobody TestJ
+	//_ = json.Unmarshal(params.Body, &bobody)
+	//SendToAddressData.Amount = bobody.Amount
+	//SendToAddressData.Address = bobody.Address
+	////**end of testing block
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
 		return "", err
@@ -383,10 +384,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 
 	blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
 
-	//** get the balance, check if its > 0
-	//if len(utxos) == 0 {
-	//	return "", errors.New("no balance available")
-	//}
+	//** get the balance, check if its > 0 or less than the amount
 	info, err := blockBookWrap.GetEthAddress(ethAccount)
 	if err != nil {
 		return "", err
@@ -405,10 +403,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	}
 
 	//** Retrieve information for outputs: out adrdress
-	//payAddr, err := btcutil.DecodeAddress(SendToAddressData.Address, coinConfig.NetParams)
-	//if err != nil {
-	//	return "", err
-	//}
+
 	toAddress := common.HexToAddress(SendToAddressData.Address)
 
 	//**calculate fee/gas cost, add the amount
@@ -418,7 +413,6 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	gasPrice := big.NewInt(int64(1000000000 * (gasStation.Average / 10)))
 	var data []byte
 	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
-	fmt.Println(account.Address.Hex())
 	// **sign and send
 	signedTx, err := signEthTx(coinConfig, account, tx, nil)
 	if err != nil {
@@ -427,8 +421,9 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	ts := types.Transactions{signedTx}
 	rawTxBytes := ts.GetRlp(0)
 	rawTxHex := hex.EncodeToString(rawTxBytes)
-
+	//fmt.Println(rawTxHex)
 	return blockBookWrap.SendTx("0x" + rawTxHex)
+	//return "", nil
 }
 
 func getJson(url string, target interface{}) error {
@@ -473,39 +468,80 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	value := btcutil.Amount(ValidateTxData.Amount)
 	coinConfig, err := coinfactory.GetCoin(ValidateTxData.Coin)
 	if err != nil {
 		return nil, err
 	}
-	rawTxBytes, err := hex.DecodeString(ValidateTxData.RawTx)
-	if err != nil {
-		return nil, err
-	}
-	tx, err := btcutil.NewTxFromBytes(rawTxBytes)
-	if err != nil {
-		return nil, err
-	}
+
 	var isValue, isAddress bool
-	for _, out := range tx.MsgTx().TxOut {
-		outAmount := btcutil.Amount(out.Value)
-		if outAmount == value {
+
+	//ethereum-like coins (and ERC20)
+	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
+		value := ValidateTxData.Amount
+		fmt.Println(value)
+		var tx *types.Transaction
+		rawtx, err := hex.DecodeString(ValidateTxData.RawTx)
+		if err != nil {
+			return nil, err
+		}
+		err = rlp.DecodeBytes(rawtx, &tx)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(tx)
+		// amount  *big.Int
+		fmt.Println(tx.Value())
+		// destination address  *common.Address
+		fmt.Println(tx.To().Hex())
+		bigvalue := new(big.Int).SetInt64(value)
+		fmt.Println(bigvalue)
+
+		if bigvalue == tx.Value() {
 			isValue = true
 		}
-		for _, addr := range c.Address[coinConfig.Info.Tag].AddrInfo {
-			Addr, err := btcutil.DecodeAddress(addr.Addr, coinConfig.NetParams)
-			if err != nil {
-				return nil, err
+		fmt.Println(isValue)
+		bodyAddr := []byte(ValidateTxData.Address)
+		fmt.Println(ValidateTxData.Address)
+		fmt.Println(bodyAddr)
+		fmt.Println(tx.To().Bytes())
+		if bytes.Equal(bodyAddr, tx.To().Bytes()) {
+			isAddress = true
+		}
+		fmt.Println(isAddress)
+
+	} else {
+		//bitcoin-like coins
+		value := btcutil.Amount(ValidateTxData.Amount)
+
+		rawTxBytes, err := hex.DecodeString(ValidateTxData.RawTx)
+		if err != nil {
+			return nil, err
+		}
+		tx, err := btcutil.NewTxFromBytes(rawTxBytes)
+		if err != nil {
+			return nil, err
+		}
+		for _, out := range tx.MsgTx().TxOut {
+			outAmount := btcutil.Amount(out.Value)
+			if outAmount == value {
+				isValue = true
 			}
-			scriptAddr, err := txscript.PayToAddrScript(Addr)
-			if err != nil {
-				return nil, err
-			}
-			if bytes.Equal(scriptAddr, out.PkScript) {
-				isAddress = true
+			for _, addr := range c.Address[coinConfig.Info.Tag].AddrInfo {
+				Addr, err := btcutil.DecodeAddress(addr.Addr, coinConfig.NetParams)
+				if err != nil {
+					return nil, err
+				}
+				scriptAddr, err := txscript.PayToAddrScript(Addr)
+				if err != nil {
+					return nil, err
+				}
+				if bytes.Equal(scriptAddr, out.PkScript) {
+					isAddress = true
+				}
 			}
 		}
 	}
+
 	if isValue && isAddress {
 		return true, nil
 	} else {

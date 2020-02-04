@@ -146,3 +146,7 @@ func TestEthBalance(t *testing.T) {
 		fmt.Println(response)
 	}
 }
+
+func TestValidateEthAddress(t *testing.T) {
+
+}
