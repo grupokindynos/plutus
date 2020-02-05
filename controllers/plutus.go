@@ -488,26 +488,15 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println(tx)
-		// amount  *big.Int
-		fmt.Println(tx.Value())
-		// destination address  *common.Address
-		fmt.Println(tx.To().Hex())
-		bigvalue := new(big.Int).SetInt64(value)
-		fmt.Println(bigvalue)
-
-		if bigvalue == tx.Value() {
+		//compare amount from the tx and the input body
+		if tx.Value().Int64() == value {
 			isValue = true
 		}
-		fmt.Println(isValue)
-		bodyAddr := []byte(ValidateTxData.Address)
-		fmt.Println(ValidateTxData.Address)
-		fmt.Println(bodyAddr)
-		fmt.Println(tx.To().Bytes())
-		if bytes.Equal(bodyAddr, tx.To().Bytes()) {
+		bodyAddr := common.HexToAddress(ValidateTxData.Address)
+		//compare the address from the tx and the input body
+		if bytes.Equal(bodyAddr.Bytes(), tx.To().Bytes()) {
 			isAddress = true
 		}
-		fmt.Println(isAddress)
 
 	} else {
 		//bitcoin-like coins
