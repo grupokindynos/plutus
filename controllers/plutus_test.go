@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/eabz/btcutil"
 	"github.com/eabz/btcutil/chaincfg"
+	"math"
+
 	//"github.com/ethereum/go-ethereum/common"
 	//"github.com/ethereum/go-ethereum/core/types"
 	"github.com/grupokindynos/common/blockbook"
@@ -147,6 +149,58 @@ func TestEthBalance(t *testing.T) {
 	}
 }
 
-func TestValidateEthAddress(t *testing.T) {
+func TestERC20balance(t *testing.T) {
+	var acc3 = "0xC6BD3EDD07e294CB66B8318356D688b3516EA950"
+	coinConfig, err := coinfactory.GetCoin("USDT")
+	ethConfig, err := coinfactory.GetCoin("ETH")
+	if err != nil {
+		t.Error(err)
+	}
+	//acc, err := getEthAccFromMnemonic(coinConfig, false)
+	//if err != nil {
+	//	t.Error(err)
+	//}
+	blockBookWrap := blockbook.NewBlockBookWrapper(ethConfig.Info.Blockbook)
+	info, err := blockBookWrap.GetEthAddress(acc3)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(info)
+	if coinConfig.Info.Token {
+		var tokenInfo *blockbook.EthTokens
+		for _, token := range info.Tokens {
 
+			if coinConfig.Info.Contract == token.Contract {
+				tokenInfo = &token
+				break
+			}
+		}
+		if tokenInfo == nil {
+			response := plutus.Balance{
+				Confirmed: 0,
+			}
+			fmt.Println(response)
+			return
+		}
+		balance, err := strconv.ParseFloat(tokenInfo.Balance, 64)
+		balance = balance / (math.Pow(10, float64(tokenInfo.Decimals)))
+		if err != nil {
+			t.Error(err)
+		}
+		response := plutus.Balance{
+			Confirmed: balance,
+		}
+		fmt.Println(response)
+		return
+	} else {
+		balance, err := strconv.ParseFloat(info.Balance, 64)
+		if err != nil {
+			t.Error(err)
+		}
+		response := plutus.Balance{
+			Confirmed: balance / 1e18,
+		}
+		fmt.Println(response)
+		return
+	}
 }

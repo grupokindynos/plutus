@@ -25,6 +25,7 @@ import (
 	"github.com/martinboehm/btcd/wire"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/tyler-smith/go-bip39"
+	"math"
 	"math/big"
 	"net/http"
 	"os"
@@ -66,20 +67,6 @@ type GasStation struct {
 	FastestWait float64 `json:"fastestWait"`
 }
 
-////**for testing only
-//type NestedElement struct {
-//	Address string  `json:"address"`
-//	Coin    string  `json:"coin"`
-//	Amount  float64 `json:"amount"`
-//}
-//type TestJ struct {
-//	Coin          string `json:"coin"`
-//	NestedElement `json:"body"`
-//	Txid          string `json:"txid"`
-//}
-//
-////**end of testing block
-
 func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(params.Coin)
 	if err != nil {
@@ -114,7 +101,7 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		acc, err := getEthAccFromMnemonic(coinConfig, false)
+		acc, err := getEthAccFromMnemonic(ethConfig, false)
 		if err != nil {
 			return nil, err
 		}
@@ -128,6 +115,7 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 			for _, token := range info.Tokens {
 				if coinConfig.Info.Contract == token.Contract {
 					tokenInfo = &token
+					break
 				}
 			}
 			if tokenInfo == nil {
@@ -137,6 +125,7 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 				return response, nil
 			}
 			balance, err := strconv.ParseFloat(tokenInfo.Balance, 64)
+			balance = balance / (math.Pow(10, float64(tokenInfo.Decimals)))
 			if err != nil {
 				return nil, err
 			}
@@ -402,8 +391,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 		return "", err
 	}
 
-	//** Retrieve information for outputs: out adrdress
-
+	//** Retrieve information for outputs: out address
 	toAddress := common.HexToAddress(SendToAddressData.Address)
 
 	//**calculate fee/gas cost, add the amount
