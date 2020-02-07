@@ -475,9 +475,9 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	ts := types.Transactions{signedTx}
 	rawTxBytes := ts.GetRlp(0)
 	rawTxHex := hex.EncodeToString(rawTxBytes)
-	//fmt.Println(rawTxHex)
-	return blockBookWrap.SendTx("0x" + rawTxHex)
-
+	fmt.Println(rawTxHex)
+	//return blockBookWrap.SendTx("0x" + rawTxHex)
+	return "", nil
 }
 
 func getJson(url string, target interface{}) error {
@@ -501,6 +501,10 @@ func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 		return nil, err
 	}
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
+		coinConfig, err = coinfactory.GetCoin("ETH")
+		if err != nil {
+			return nil, err
+		}
 		acc, err := getEthAccFromMnemonic(coinConfig, false)
 		if err != nil {
 			return nil, err
@@ -532,7 +536,6 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 	//ethereum-like coins (and ERC20)
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
 		value := ValidateTxData.Amount
-		fmt.Println(value)
 		var tx *types.Transaction
 		rawtx, err := hex.DecodeString(ValidateTxData.RawTx)
 		if err != nil {
@@ -543,12 +546,22 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 			return nil, err
 		}
 		//compare amount from the tx and the input body
-		if tx.Value().Int64() == value {
+		var txBodyAmount int64
+		var txAddr common.Address
+		if coinConfig.Info.Token {
+			address, amount := DecodeERC20Data([]byte(hex.EncodeToString(tx.Data())))
+			txAddr = common.HexToAddress(string(address))
+			txBodyAmount = amount.Int64()
+		} else {
+			txBodyAmount = tx.Value().Int64()
+			txAddr = *tx.To()
+		}
+		if txBodyAmount == value {
 			isValue = true
 		}
 		bodyAddr := common.HexToAddress(ValidateTxData.Address)
 		//compare the address from the tx and the input body
-		if bytes.Equal(bodyAddr.Bytes(), tx.To().Bytes()) {
+		if bytes.Equal(bodyAddr.Bytes(), txAddr.Bytes()) {
 			isAddress = true
 		}
 
@@ -654,6 +667,7 @@ func getEthAccFromMnemonic(coinConfig *coins.Coin, saveWallet bool) (accounts.Ac
 	if err != nil {
 		return accounts.Account{}, err
 	}
+	// standard for eth wallets like Metamask
 	path := hdwallet.MustParseDerivationPath("m/44'/60'/0'/0/0")
 	account, err := wallet.Derive(path, true)
 	if err != nil {
@@ -674,7 +688,15 @@ func signEthTx(coinConfig *coins.Coin, account accounts.Account, tx *types.Trans
 		return nil, err
 	}
 	return signedTx, nil
+}
 
+func DecodeERC20Data(b []byte) ([]byte, *big.Int) {
+	to := b[32:72]
+	tokens := b[74:136]
+	hexed, _ := hex.DecodeString(string(tokens))
+	amount := big.NewInt(0)
+	amount.SetBytes(hexed)
+	return to, amount
 }
 
 func getPubKeyHashFromPath(acc *hdkeychain.ExtendedKey, coinConfig *coins.Coin, path uint32) (string, error) {
