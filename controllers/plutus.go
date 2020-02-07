@@ -25,6 +25,7 @@ import (
 	"github.com/martinboehm/btcd/wire"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/tyler-smith/go-bip39"
+	"golang.org/x/crypto/sha3"
 	"math"
 	"math/big"
 	"net/http"
@@ -111,13 +112,9 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 			return nil, err
 		}
 		if coinConfig.Info.Token {
-			var tokenInfo *blockbook.EthTokens
-			for _, token := range info.Tokens {
-				if coinConfig.Info.Contract == token.Contract {
-					tokenInfo = &token
-					break
-				}
-			}
+
+			tokenInfo := ercDetails(info, coinConfig.Info.Contract)
+
 			if tokenInfo == nil {
 				response := plutus.Balance{
 					Confirmed: 0,
@@ -146,15 +143,38 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	}
 }
 
+func ercDetails(info blockbook.EthAddr, contract string) *blockbook.EthTokens {
+	var tokenInfo *blockbook.EthTokens
+	for _, token := range info.Tokens {
+		if contract == token.Contract {
+			tokenInfo = &token
+			break
+		}
+	}
+	return tokenInfo
+}
+
 func (c *Controller) GetAddress(params Params) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(params.Coin)
 	if err != nil {
 		return nil, err
 	}
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
-		acc, err := getEthAccFromMnemonic(coinConfig, false)
-		if err != nil {
-			return nil, err
+		var acc accounts.Account
+		if coinConfig.Mnemonic == "" {
+			ethConfig, err := coinfactory.GetCoin("ETH")
+			if err != nil {
+				return nil, err
+			}
+			acc, err = getEthAccFromMnemonic(ethConfig, false)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			acc, err = getEthAccFromMnemonic(coinConfig, false)
+			if err != nil {
+				return nil, err
+			}
 		}
 		return acc.Address.Hex(), nil
 	}
@@ -192,12 +212,6 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	////**only for testing block
-	//var bobody TestJ
-	//_ = json.Unmarshal(params.Body, &bobody)
-	//SendToAddressData.Amount = bobody.Amount
-	//SendToAddressData.Address = bobody.Address
-	////**end of testing block
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
 	if err != nil {
 		return "", err
@@ -362,16 +376,19 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 }
 
 func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin) (string, error) {
-	//**generate a valid tx amount
-	value := big.NewInt(int64(SendToAddressData.Amount * 1000000000000000000))
-	//**get the senders address, public key and private key?
-	account, err := getEthAccFromMnemonic(coinConfig, true)
+	// using the ethereum account to hl the tokens
+	ethConfig, err := coinfactory.GetCoin("ETH")
+	if err != nil {
+		return "", err
+	}
+	//**get the account that holds the private keys and addresses
+	account, err := getEthAccFromMnemonic(ethConfig, true)
 	if err != nil {
 		return "", err
 	}
 	ethAccount := account.Address.Hex()
 
-	blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
+	blockBookWrap := blockbook.NewBlockBookWrapper(ethConfig.Info.Blockbook)
 
 	//** get the balance, check if its > 0 or less than the amount
 	info, err := blockBookWrap.GetEthAddress(ethAccount)
@@ -383,35 +400,84 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 		return "", err
 	}
 	balance = balance / 1e18
-	if balance == 0 || balance < SendToAddressData.Amount {
-		return "", errors.New("no balance available")
+	if balance == 0 {
+		return "", errors.New("no eth available")
 	}
+	decimals := 18
+	if coinConfig.Info.Token {
+		// check balance of token
+		tokenInfo := ercDetails(info, coinConfig.Info.Contract)
+		if tokenInfo == nil {
+			return "", errors.New("no token balance available")
+		}
+		tokenBalance, err := strconv.ParseFloat(tokenInfo.Balance, 64)
+		if err != nil {
+			return "", err
+		}
+		tokenBalance = tokenBalance / (math.Pow(10, float64(tokenInfo.Decimals)))
+		if tokenBalance == 0 || tokenBalance < SendToAddressData.Amount {
+			return "", errors.New("not enough token available")
+		}
+		decimals = tokenInfo.Decimals
+	} else {
+		if balance < SendToAddressData.Amount {
+			return "", errors.New("not enough balance")
+		}
+	}
+	// get the nonce
 	nonce, err := strconv.ParseUint(info.Nonce, 0, 64)
 	if err != nil {
-		return "", err
+		return "", errors.New("nonce failed")
 	}
 
 	//** Retrieve information for outputs: out address
 	toAddress := common.HexToAddress(SendToAddressData.Address)
-
-	//**calculate fee/gas cost, add the amount
-	gasLimit := uint64(21000)
+	//**calculate fee/gas cost
+	gasLimit := uint64(200000)
 	gasStation := GasStation{}
-	_ = getJson("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
-	gasPrice := big.NewInt(int64(1000000000 * (gasStation.Average / 10)))
-	var data []byte
-	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
-	// **sign and send
-	signedTx, err := signEthTx(coinConfig, account, tx, nil)
+	err = getJson("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
 	if err != nil {
-		return "", err
+		return "", errors.New("could not retrieve the gas price")
+	}
+	gasPrice := big.NewInt(int64(1000000000 * (gasStation.Average / 10))) //(10^9*(gweiValue/10))
+	var data []byte
+	var tx *types.Transaction
+
+	if coinConfig.Info.Token {
+		// the additional data for the token transaction
+		tokenAddress := common.HexToAddress(coinConfig.Info.Contract)
+
+		transferFnSignature := []byte("transfer(address,uint256)")
+		hash := sha3.NewLegacyKeccak256()
+		hash.Write(transferFnSignature)
+		methodID := hash.Sum(nil)[:4]
+
+		paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
+
+		amount := new(big.Int)
+		amount.SetUint64(uint64(SendToAddressData.Amount * (math.Pow10(decimals))))
+		paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
+
+		data = append(data, methodID...)
+		data = append(data, paddedAddress...)
+		data = append(data, paddedAmount...)
+		value := big.NewInt(0) // in wei (0 eth)
+		tx = types.NewTransaction(nonce, tokenAddress, value, gasLimit, gasPrice, data)
+	} else {
+		value := big.NewInt(int64(SendToAddressData.Amount * 1000000000000000000)) // the amount in wei
+		tx = types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
+	}
+	// **sign and send
+	signedTx, err := signEthTx(ethConfig, account, tx, nil)
+	if err != nil {
+		return "", errors.New("failed to sign transaction")
 	}
 	ts := types.Transactions{signedTx}
 	rawTxBytes := ts.GetRlp(0)
 	rawTxHex := hex.EncodeToString(rawTxBytes)
 	//fmt.Println(rawTxHex)
 	return blockBookWrap.SendTx("0x" + rawTxHex)
-	//return "", nil
+
 }
 
 func getJson(url string, target interface{}) error {
@@ -603,7 +669,6 @@ func signEthTx(coinConfig *coins.Coin, account accounts.Account, tx *types.Trans
 	if coinConfig.Mnemonic == "" {
 		return nil, errors.New("the coin is not available")
 	}
-
 	signedTx, err := ethWallet.SignTx(account, tx, chainID)
 	if err != nil {
 		return nil, err
