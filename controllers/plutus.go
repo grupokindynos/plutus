@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/eabz/btcutil"
 	"github.com/eabz/btcutil/chaincfg"
 	"github.com/eabz/btcutil/hdkeychain"
@@ -475,9 +474,9 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	ts := types.Transactions{signedTx}
 	rawTxBytes := ts.GetRlp(0)
 	rawTxHex := hex.EncodeToString(rawTxBytes)
-	fmt.Println(rawTxHex)
-	//return blockBookWrap.SendTx("0x" + rawTxHex)
-	return "", nil
+	//fmt.Println(rawTxHex)
+	return blockBookWrap.SendTx("0x" + rawTxHex)
+	//return "", nil
 }
 
 func getJson(url string, target interface{}) error {
