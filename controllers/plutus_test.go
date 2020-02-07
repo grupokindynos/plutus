@@ -1,22 +1,15 @@
 package controllers
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/eabz/btcutil"
 	"github.com/eabz/btcutil/chaincfg"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/grupokindynos/common/plutus"
 	"github.com/martinboehm/btcd/wire"
-	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
-	"golang.org/x/crypto/sha3"
 	"math"
-	"math/big"
 	"reflect"
 	"strconv"
 	"testing"
@@ -205,82 +198,4 @@ func TestERC20Balance(t *testing.T) {
 		fmt.Println(response)
 		return
 	}
-}
-
-func TestERC20Transfer(t *testing.T) {
-	mnem := "roof stable huge chuckle where else sniff apology museum maze parade delay"
-	wallet, err := hdwallet.NewFromMnemonic(mnem)
-	if err != nil {
-		t.Error(err)
-	}
-	path := hdwallet.MustParseDerivationPath("m/44'/60'/0'/0/0")
-	account, err := wallet.Derive(path, true)
-	if err != nil {
-		t.Error(err)
-	}
-
-	coinConfig, err := coinfactory.GetCoin("ETH")
-	if err != nil {
-		t.Error(err)
-	}
-
-	blockBookWrap := blockbook.NewBlockBookWrapper(coinConfig.Info.Blockbook)
-
-	//** get the balance, check if its > 0 or less than the amount
-	info, err := blockBookWrap.GetEthAddress(account.Address.Hex())
-	if err != nil {
-		t.Error(err)
-	}
-
-	nonce, err := strconv.ParseUint(info.Nonce, 0, 64)
-	if err != nil {
-		t.Error(err)
-	}
-	fmt.Println(account.Address.Hex(), nonce)
-	//** Retrieve information for outputs: out address
-	toAddress := common.HexToAddress("0x673153460D01A22F9dAc129F2Ea59be3681921A4")
-
-	//**calculate fee/gas cost, add the amount
-	gasLimit := uint64(200000)
-	gasStation := GasStation{}
-	_ = getJson("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
-	gasPrice := big.NewInt(int64(1000000000 * (gasStation.Average / 10)))
-
-	tokenAddress := common.HexToAddress("0xfab46e002bbf0b4509813474841e0716e6730136")
-
-	transferFnSignature := []byte("transfer(address,uint256)")
-	hash := sha3.NewLegacyKeccak256()
-	hash.Write(transferFnSignature)
-	methodID := hash.Sum(nil)[:4]
-	fmt.Println(hexutil.Encode(methodID), gasLimit, gasPrice, tokenAddress, toAddress) // 0xa9059cbb
-
-	paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
-	fmt.Println(hexutil.Encode(paddedAddress))
-
-	amount := new(big.Int)
-	amount.SetUint64(uint64(10 * (math.Pow(10, 18))))
-	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
-	fmt.Println(hexutil.Encode(paddedAmount), amount)
-
-	var data []byte
-	data = append(data, methodID...)
-	data = append(data, paddedAddress...)
-	data = append(data, paddedAmount...)
-	value := big.NewInt(0) // in wei (0 eth)
-	tx := types.NewTransaction(nonce, tokenAddress, value, gasLimit, gasPrice, data)
-	// **sign and send
-	signedTx, err := wallet.SignTx(account, tx, nil)
-	if err != nil {
-		t.Error(err)
-	}
-	ts := types.Transactions{signedTx}
-	rawTxBytes := ts.GetRlp(0)
-	rawTxHex := hex.EncodeToString(rawTxBytes)
-	fmt.Println(rawTxHex)
-	response, err := blockBookWrap.SendTx("0x" + rawTxHex)
-	if err != nil {
-		t.Error(err)
-	}
-	fmt.Println(response)
-
 }
