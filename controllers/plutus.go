@@ -313,7 +313,7 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 		}
 	}
 	var feeRate int64
-	if fee.Result == "-1" || fee.Result == "0" {
+	if fee.Result == "-1" || fee.Result == "0" || fee.Result == "" {
 		feeRate = 4000
 	} else {
 		feeParse, err := strconv.ParseFloat(fee.Result, 64)
