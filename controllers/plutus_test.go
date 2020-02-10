@@ -1,12 +1,23 @@
 package controllers
 
 import (
+	"bytes"
+	"encoding/hex"
+	"fmt"
 	"github.com/eabz/btcutil"
 	"github.com/eabz/btcutil/chaincfg"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
+	"github.com/grupokindynos/common/plutus"
 	"github.com/martinboehm/btcd/wire"
+	"math"
+	"math/big"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -87,4 +98,147 @@ func TestXpubGeneration(t *testing.T) {
 			t.Error("privKey doesn't match for " + test.coin.Info.Tag + " expected: " + test.privKey + " got: " + wif.String())
 		}
 	}
+}
+func TestEthBalance(t *testing.T) {
+	var acc3 = "0x931D387731bBbC988B312206c74F77D004D6B84b"
+	//var acc2 = "0x71c7656ec7ab88b098defb751b7401b5f6d8976f"
+	coinConfig, err := coinfactory.GetCoin("ETH")
+	ethConfig, err := coinfactory.GetCoin("ETH")
+	if err != nil {
+		fmt.Println(err)
+		//return nil, err
+	}
+	blockBookWrap := blockbook.NewBlockBookWrapper(ethConfig.Info.Blockbook)
+	info, err := blockBookWrap.GetEthAddress(acc3)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+
+	if coinConfig.Info.Token {
+		var tokenInfo *blockbook.EthTokens
+		for _, token := range info.Tokens {
+			if coinConfig.Info.Contract == token.Contract {
+				tokenInfo = &token
+			}
+		}
+		if tokenInfo == nil {
+			response := plutus.Balance{
+				Confirmed: 0,
+			}
+			fmt.Println(response)
+		} else {
+			fmt.Println(tokenInfo)
+			balance, err := strconv.ParseFloat(tokenInfo.Balance, 64)
+			if err != nil {
+				fmt.Println(err)
+			}
+			response := plutus.Balance{
+				Confirmed: balance,
+			}
+			fmt.Println(response)
+		}
+	} else {
+		balance, err := strconv.ParseFloat(info.Balance, 64)
+		if err != nil {
+			fmt.Println(err)
+		}
+		response := plutus.Balance{
+			Confirmed: balance / 1e18,
+		}
+		fmt.Println(response)
+	}
+}
+
+func TestERC20Balance(t *testing.T) {
+	var acc3 = "0xC6BD3EDD07e294CB66B8318356D688b3516EA950"
+	coinConfig, err := coinfactory.GetCoin("USDT")
+	ethConfig, err := coinfactory.GetCoin("ETH")
+	if err != nil {
+		t.Error(err)
+	}
+	blockBookWrap := blockbook.NewBlockBookWrapper(ethConfig.Info.Blockbook)
+	info, err := blockBookWrap.GetEthAddress(acc3)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(info)
+	if coinConfig.Info.Token {
+		var tokenInfo *blockbook.EthTokens
+		for _, token := range info.Tokens {
+
+			if coinConfig.Info.Contract == token.Contract {
+				tokenInfo = &token
+				break
+			}
+		}
+		if tokenInfo == nil {
+			response := plutus.Balance{
+				Confirmed: 0,
+			}
+			fmt.Println(response)
+			return
+		}
+		balance, err := strconv.ParseFloat(tokenInfo.Balance, 64)
+		balance = balance / (math.Pow(10, float64(tokenInfo.Decimals)))
+		if err != nil {
+			t.Error(err)
+		}
+		response := plutus.Balance{
+			Confirmed: balance,
+		}
+		fmt.Println(response)
+		return
+	} else {
+		balance, err := strconv.ParseFloat(info.Balance, 64)
+		if err != nil {
+			t.Error(err)
+		}
+		response := plutus.Balance{
+			Confirmed: balance / 1e18,
+		}
+		fmt.Println(response)
+		return
+	}
+}
+
+func TestValidateERC20raxTx(t *testing.T) {
+	//rawTx := "f8aa1b85012a05f20083030d4094dac17f958d2ee523a2206206994597c13d831ec780b844a9059cbb000000000000000000000000673153460d01a22f9dac129f2ea59be3681921a400000000000000000000000000000000000000000000000000000000001e84801ba0a2437e58ab016fc47ae3a8b119bec36482549ca07d19eeebe373bff226a5823ba063134b2a2f4725b9879e484b59e22ebaf07083492528ecf0a43b7c94f8b8ddc5"
+	rawTx := "f8a91b84b2d05e0083030d4094dac17f958d2ee523a2206206994597c13d831ec780b844a9059cbb000000000000000000000000673153460d01a22f9dac129f2ea59be3681921a400000000000000000000000000000000000000000000000000000000002f4d601ca0accf91f7628d757135bb2ec51afdd990a029e98c0ef19cf4673799501d241e76a051208e147977fb79c09e06885687637787efa8b34d46b398d98b5ee5da10c081"
+	value := int64(3100000)
+	var tx *types.Transaction
+	rawtx, err := hex.DecodeString(rawTx)
+	if err != nil {
+		t.Error(err)
+	}
+	err = rlp.DecodeBytes(rawtx, &tx)
+	if err != nil {
+		t.Error(err)
+	}
+	var isValue bool
+	var isAddress bool
+	//compare amount from the tx and the input body
+	bodyAddr := common.HexToAddress("0x673153460D01A22F9dAc129F2Ea59be3681921A4")
+	//compare the address from the tx and the input body
+	fmt.Println(hex.EncodeToString(tx.Data()))
+	fmt.Println(tx.Data())
+	address, amount := ReverseTransferPayload([]byte(hex.EncodeToString(tx.Data())))
+	toAddr := common.HexToAddress(string(address))
+	fmt.Println(toAddr.Hex())
+
+	if amount.Int64() == value {
+		isValue = true
+	}
+	if bytes.Equal(bodyAddr.Bytes(), toAddr.Bytes()) {
+		isAddress = true
+	}
+	fmt.Println(isValue, isAddress)
+}
+func ReverseTransferPayload(b []byte) ([]byte, *big.Int) {
+	to := b[32:72]
+	tokens := b[74:136]
+	hexed, _ := hex.DecodeString(string(tokens))
+	amount := big.NewInt(0)
+	amount.SetBytes(hexed)
+	return to, amount
 }
