@@ -474,7 +474,6 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	ts := types.Transactions{signedTx}
 	rawTxBytes := ts.GetRlp(0)
 	rawTxHex := hex.EncodeToString(rawTxBytes)
-	//fmt.Println(rawTxHex)
 	return blockBookWrap.SendTx("0x" + rawTxHex)
 	//return "", nil
 }
