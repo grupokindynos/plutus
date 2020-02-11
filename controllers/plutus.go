@@ -5,6 +5,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"math"
+	"math/big"
+	"net/http"
+	"os"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/eabz/btcutil"
 	"github.com/eabz/btcutil/chaincfg"
 	"github.com/eabz/btcutil/hdkeychain"
@@ -25,14 +34,6 @@ import (
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/sha3"
-	"math"
-	"math/big"
-	"net/http"
-	"os"
-	"reflect"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type Params struct {
@@ -323,7 +324,8 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 		feeRate = int64(feeParse * 1e8)
 	}
 	txSize := (len(Tx.TxIn) * 180) + (len(Tx.TxOut) * 34) + 124
-	payingFee := btcutil.Amount((feeRate / 1024) * int64(txSize))
+	feeSats := float64(feeRate) / 1024.0 * float64(txSize)
+	payingFee := btcutil.Amount(int64(feeSats))
 	if availableAmount-payingFee-value > 0 {
 		txOutChange := &wire.TxOut{
 			Value:    int64(((availableAmount - value) - payingFee).ToUnit(btcutil.AmountSatoshi)),
