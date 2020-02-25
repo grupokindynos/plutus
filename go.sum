@@ -195,6 +195,8 @@ github.com/grupokindynos/common v0.0.0-20200211170601-e79af19ac812 h1:qQzw0d+682
 github.com/grupokindynos/common v0.0.0-20200211170601-e79af19ac812/go.mod h1:GuHK2gA5yF3hD5PjguSHuTf8f2xyEmdxoiFOFviyhng=
 github.com/grupokindynos/common v0.0.0-20200211174551-e3911ebb67a2 h1:URgywBaIaQionTNCanLcppHo7xJryqaMNnz/sYD2IDc=
 github.com/grupokindynos/common v0.0.0-20200211174551-e3911ebb67a2/go.mod h1:GuHK2gA5yF3hD5PjguSHuTf8f2xyEmdxoiFOFviyhng=
+github.com/grupokindynos/common v0.0.0-20200224195843-eef7fd3aa897 h1:qYw+4dNyT2KIlRzWhqAU7OauauAXZmMEDhJKuxzB7B8=
+github.com/grupokindynos/common v0.0.0-20200224195843-eef7fd3aa897/go.mod h1:GuHK2gA5yF3hD5PjguSHuTf8f2xyEmdxoiFOFviyhng=
 github.com/grupokindynos/tyche v0.0.0-20200207165905-4b3747a2719a h1:3O9ywcStVsORRrBOFH7/VRc09pXNRqOPP+umRhHVORE=
 github.com/grupokindynos/tyche v0.0.0-20200207165905-4b3747a2719a/go.mod h1:MT6Cr24nPXIBzV0ulQfcDhLZBXzdJpisQGFsPotq9BE=
 github.com/hashicorp/go-uuid v1.0.1/go.mod h1:6SBZvOh/SIDV7/2o3Jml5SYk/TvGqwFJ/bN7x4byOro=
