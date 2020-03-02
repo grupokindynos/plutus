@@ -111,10 +111,8 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		if coinConfig.Info.Token {
-
+		if coinConfig.Info.Tag != "ETH" {
 			tokenInfo := ercDetails(info, coinConfig.Info.Contract)
-
 			if tokenInfo == nil {
 				response := plutus.Balance{
 					Confirmed: 0,
@@ -146,7 +144,7 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 func ercDetails(info blockbook.EthAddr, contract string) *blockbook.EthTokens {
 	var tokenInfo *blockbook.EthTokens
 	for _, token := range info.Tokens {
-		if contract == token.Contract {
+		if common.HexToAddress(contract) == common.HexToAddress(token.Contract) {
 			tokenInfo = &token
 			break
 		}
@@ -405,7 +403,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 		return "", errors.New("no eth available")
 	}
 	decimals := 18
-	if coinConfig.Info.Token {
+	if coinConfig.Info.Token && coinConfig.Info.Tag != "ETH" {
 		// check balance of token
 		tokenInfo := ercDetails(info, coinConfig.Info.Contract)
 		if tokenInfo == nil {
@@ -434,7 +432,10 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	//** Retrieve information for outputs: out address
 	toAddress := common.HexToAddress(SendToAddressData.Address)
 	//**calculate fee/gas cost
-	gasLimit := uint64(200000)
+	gasLimit := uint64(21000)
+	if coinConfig.Info.Tag != "ETH" {
+		gasLimit = uint64(200000)
+	}
 	gasStation := GasStation{}
 	err = getJson("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
 	if err != nil {
@@ -444,7 +445,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	var data []byte
 	var tx *types.Transaction
 
-	if coinConfig.Info.Token {
+	if coinConfig.Info.Token && coinConfig.Info.Tag != "ETH" {
 		// the additional data for the token transaction
 		tokenAddress := common.HexToAddress(coinConfig.Info.Contract)
 
