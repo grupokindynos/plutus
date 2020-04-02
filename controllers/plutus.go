@@ -456,8 +456,12 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 
 		paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
 
-		amount := new(big.Int)
-		amount.SetUint64(uint64(SendToAddressData.Amount * (math.Pow10(decimals))))
+		val := new(big.Float)
+		pot := new(big.Float)
+		val.SetFloat64(SendToAddressData.Amount)
+		pot.SetFloat64(math.Pow10(decimals))
+		val.Mul(val, pot)
+		amount, _ := val.Int(nil)
 		paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
 
 		data = append(data, methodID...)
