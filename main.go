@@ -43,6 +43,17 @@ func ApplyRoutes(r *gin.Engine) {
 		api.POST("/validate/tx", func(context *gin.Context) { VerifyRequest(context, ctrl.ValidateRawTx) })
 		api.POST("/send/address", func(context *gin.Context) { VerifyRequest(context, ctrl.SendToAddress) })
 	}
+	apiV2 := r.Group("/v2/", gin.BasicAuth(gin.Accounts{
+		authUser: authPassword,
+	}))
+	{
+		ctrlV2 := controllers.NewPlutusControllerV2()
+		apiV2.GET("/balance/:coin", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.GetBalanceV2) })
+		apiV2.GET("/address/:coin", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.GetAddressV2) })
+		apiV2.POST("/validate/addr", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.ValidateAddressV2) })
+		apiV2.POST("/validate/tx", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.ValidateRawTxV2) })
+		apiV2.POST("/send/address", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.SendToAddressV2) })
+	}
 	r.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusNotFound, "Not Found")
 	})
@@ -58,6 +69,32 @@ func VerifyRequest(c *gin.Context, method func(params controllers.Params) (inter
 		Coin: c.Param("coin"),
 		Txid: c.Param("txid"),
 		Body: payload,
+	}
+	response, err := method(params)
+	if err != nil {
+		responses.GlobalResponseError(nil, err, c)
+		return
+	}
+	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
+	if err != nil {
+		responses.GlobalResponseError(nil, err, c)
+		return
+	}
+	responses.GlobalResponseMRT(header, body, c)
+	return
+}
+func VerifyRequestV2(c *gin.Context, method func(params controllers.ParamsV2) (interface{}, error)) {
+	payload, err := mvt.VerifyRequest(c)
+	if err != nil {
+		responses.GlobalResponseNoAuth(c)
+		return
+	}
+	variables := c.Request.URL.Query()
+	params := controllers.ParamsV2{
+		Coin:    c.Param("coin"),
+		Txid:    c.Param("txid"),
+		Body:    payload,
+		Service: variables.Get("source"),
 	}
 	response, err := method(params)
 	if err != nil {
