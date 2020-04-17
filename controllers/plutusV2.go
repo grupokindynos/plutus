@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/google/martian/log"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
@@ -484,104 +483,6 @@ func (c *ControllerV2) ValidateAddressV2(params ParamsV2) (interface{}, error) {
 		}
 	}
 	return isMine, nil
-}
-
-func (c *ControllerV2) ValidateRawTxV2(params ParamsV2) (interface{}, error) {
-	var ValidateTxData plutus.ValidateRawTxReq
-	err := json.Unmarshal(params.Body, &ValidateTxData)
-	if err != nil {
-		return nil, err
-	}
-	coinConfig, err := coinfactory.GetCoin(ValidateTxData.Coin)
-	if err != nil {
-		return nil, err
-	}
-
-	var isValue, isAddress bool
-
-	//ethereum-like coins (and ERC20)
-	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
-		/* In V2, it validates the raw tx address with the accounts from PLUTUS. (In v1, validation is with the body
-		address). Now the body address is ignored */
-		value := ValidateTxData.Amount
-		var tx *types.Transaction
-		rawtx, err := hex.DecodeString(ValidateTxData.RawTx)
-		if err != nil {
-			return nil, err
-		}
-		err = rlp.DecodeBytes(rawtx, &tx)
-		if err != nil {
-			return nil, err
-		}
-		//compare amount from the tx and the input body
-		var txBodyAmount int64
-		var txAddr common.Address
-		if coinConfig.Info.Token {
-			address, amount := DecodeERC20Data([]byte(hex.EncodeToString(tx.Data())))
-			txAddr = common.HexToAddress(string(address))
-			txBodyAmount = amount.Int64()
-		} else {
-			txBodyAmount = tx.Value().Int64()
-			txAddr = *tx.To()
-		}
-		if txBodyAmount == value {
-			isValue = true
-		}
-		ethConfig, err := coinfactory.GetCoin("ETH")
-		if err != nil {
-			return nil, err
-		}
-		if params.Service == "tyche" || params.Service == "ladon" {
-			ethConfig.Mnemonic = os.Getenv("MNEMONIC_" + coinV2)
-		}
-		acc, err := getEthAccFromMnemonicV2(ethConfig, false)
-		if err != nil {
-			return nil, err
-		}
-		plutusAddr := acc.Address
-		//compare the address from the tx and the input body
-		if bytes.Equal(plutusAddr.Bytes(), txAddr.Bytes()) {
-			isAddress = true
-		}
-
-	} else {
-		//bitcoin-like coins
-		value := btcutil.Amount(ValidateTxData.Amount)
-
-		rawTxBytes, err := hex.DecodeString(ValidateTxData.RawTx)
-		if err != nil {
-			return nil, err
-		}
-		tx, err := btcutil.NewTxFromBytes(rawTxBytes)
-		if err != nil {
-			return nil, err
-		}
-		for _, out := range tx.MsgTx().TxOut {
-			outAmount := btcutil.Amount(out.Value)
-			if outAmount == value {
-				isValue = true
-			}
-			for _, addr := range c.Address[coinConfig.Info.Tag].AddrInfo {
-				Addr, err := btcutil.DecodeAddress(addr.Addr, coinConfig.NetParams)
-				if err != nil {
-					return nil, err
-				}
-				scriptAddr, err := txscript.PayToAddrScript(Addr)
-				if err != nil {
-					return nil, err
-				}
-				if bytes.Equal(scriptAddr, out.PkScript) {
-					isAddress = true
-				}
-			}
-		}
-	}
-
-	if isValue && isAddress {
-		return true, nil
-	} else {
-		return false, nil
-	}
 }
 
 func getEthAccFromMnemonicV2(coinConfig *coins.Coin, saveWallet bool) (accounts.Account, error) {

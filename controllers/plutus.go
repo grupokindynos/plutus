@@ -542,6 +542,10 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
 		value := ValidateTxData.Amount
 		var tx *types.Transaction
+		if ValidateTxData.RawTx[0:2] == "0x" {
+			ValidateTxData.RawTx = ValidateTxData.RawTx[2:]
+		}
+		//if ValidateTxData.RawTx[]
 		rawtx, err := hex.DecodeString(ValidateTxData.RawTx)
 		if err != nil {
 			return nil, err
@@ -553,7 +557,7 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 		//compare amount from the tx and the input body
 		var txBodyAmount int64
 		var txAddr common.Address
-		if coinConfig.Info.Token {
+		if coinConfig.Info.Token && coinConfig.Info.Tag != "ETH" {
 			address, amount := DecodeERC20Data([]byte(hex.EncodeToString(tx.Data())))
 			txAddr = common.HexToAddress(string(address))
 			txBodyAmount = amount.Int64()
