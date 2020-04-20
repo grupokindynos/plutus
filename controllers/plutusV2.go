@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/google/martian/log"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
@@ -483,6 +484,102 @@ func (c *ControllerV2) ValidateAddressV2(params ParamsV2) (interface{}, error) {
 		}
 	}
 	return isMine, nil
+}
+
+func (c *ControllerV2) ValidateRawTxV2(params ParamsV2) (interface{}, error) {
+	var ValidateTxData plutus.ValidateRawTxReq
+	err := json.Unmarshal(params.Body, &ValidateTxData)
+	if err != nil {
+		return nil, err
+	}
+	coinConfig, err := coinfactory.GetCoin(ValidateTxData.Coin)
+	if err != nil {
+		return nil, err
+	}
+
+	var isValue, isAddress bool
+
+	//ethereum-like coins (and ERC20)
+	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
+		value := ValidateTxData.Amount
+		if params.Service == "ladon" && coinConfig.Info.Tag != "ETH" {
+			//remove the 1e8
+			valueNoSatoshi := float64(value) / 1e8
+			value = decimalToToken(valueNoSatoshi, coinConfig.Info.Decimals).Int64()
+		} else if params.Service == "ladon" && coinConfig.Info.Tag == "ETH" {
+			value = value * 1e10
+		}
+		var tx *types.Transaction
+		if ValidateTxData.RawTx[0:2] == "0x" {
+			ValidateTxData.RawTx = ValidateTxData.RawTx[2:]
+		}
+		//if ValidateTxData.RawTx[]
+		rawtx, err := hex.DecodeString(ValidateTxData.RawTx)
+		if err != nil {
+			return nil, err
+		}
+		err = rlp.DecodeBytes(rawtx, &tx)
+		if err != nil {
+			return nil, err
+		}
+		//compare amount from the tx and the input body
+		var txBodyAmount int64
+		var txAddr common.Address
+		if coinConfig.Info.Token && coinConfig.Info.Tag != "ETH" {
+			address, amount := DecodeERC20Data([]byte(hex.EncodeToString(tx.Data())))
+			txAddr = common.HexToAddress(string(address))
+			txBodyAmount = amount.Int64()
+		} else {
+			txBodyAmount = tx.Value().Int64()
+			txAddr = *tx.To()
+		}
+		if txBodyAmount == value {
+			isValue = true
+		}
+		bodyAddr := common.HexToAddress(ValidateTxData.Address)
+		//compare the address from the tx and the input body
+		if bytes.Equal(bodyAddr.Bytes(), txAddr.Bytes()) {
+			isAddress = true
+		}
+
+	} else {
+		//bitcoin-like coins
+		value := btcutil.Amount(ValidateTxData.Amount)
+
+		rawTxBytes, err := hex.DecodeString(ValidateTxData.RawTx)
+		if err != nil {
+			return nil, err
+		}
+		tx, err := btcutil.NewTxFromBytes(rawTxBytes)
+		if err != nil {
+			return nil, err
+		}
+		for _, out := range tx.MsgTx().TxOut {
+			outAmount := btcutil.Amount(out.Value)
+			if outAmount == value {
+				isValue = true
+			}
+			for _, addr := range c.Address[coinConfig.Info.Tag].AddrInfo {
+				Addr, err := btcutil.DecodeAddress(addr.Addr, coinConfig.NetParams)
+				if err != nil {
+					return nil, err
+				}
+				scriptAddr, err := txscript.PayToAddrScript(Addr)
+				if err != nil {
+					return nil, err
+				}
+				if bytes.Equal(scriptAddr, out.PkScript) {
+					isAddress = true
+				}
+			}
+		}
+	}
+
+	if isValue && isAddress {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
 
 func getEthAccFromMnemonicV2(coinConfig *coins.Coin, saveWallet bool) (accounts.Account, error) {

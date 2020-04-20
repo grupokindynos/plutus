@@ -51,6 +51,7 @@ func ApplyRoutes(r *gin.Engine) {
 		apiV2.GET("/balance/:coin", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.GetBalanceV2) })
 		apiV2.GET("/address/:coin", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.GetAddressV2) })
 		apiV2.POST("/validate/addr", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.ValidateAddressV2) })
+		apiV2.POST("/validate/tx", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.ValidateRawTxV2) })
 		apiV2.POST("/send/address", func(context *gin.Context) { VerifyRequestV2(context, ctrlV2.SendToAddressV2) })
 	}
 	r.NoRoute(func(c *gin.Context) {

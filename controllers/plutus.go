@@ -708,6 +708,16 @@ func DecodeERC20Data(b []byte) ([]byte, *big.Int) {
 	return to, amount
 }
 
+func decimalToToken(decimalAmount float64, decimals int) *big.Int {
+	val := new(big.Float)
+	pot := new(big.Float)
+	val.SetFloat64(decimalAmount)
+	pot.SetFloat64(math.Pow10(decimals))
+	val.Mul(val, pot)
+	amount, _ := val.Int(nil)
+	return amount
+}
+
 func getPubKeyHashFromPath(acc *hdkeychain.ExtendedKey, coinConfig *coins.Coin, path uint32) (string, error) {
 	directExtended, err := acc.Child(0)
 	if err != nil {
