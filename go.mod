@@ -8,7 +8,7 @@ require (
 	github.com/gin-contrib/cors v1.3.0
 	github.com/gin-gonic/gin v1.5.0
 	github.com/google/martian v2.1.0+incompatible
-	github.com/grupokindynos/common v0.0.0-20200327183545-2c6e7ed4b7e8
+	github.com/grupokindynos/common v0.0.0-20200420160452-6011fd9d5c1f
 	github.com/heroku/x v0.0.20
 	github.com/joho/godotenv v1.3.0
 	github.com/martinboehm/btcd v0.0.0-20190104121910-8e7c0427fee5
