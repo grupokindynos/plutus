@@ -4,6 +4,12 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"math"
+	"math/big"
+	"reflect"
+	"strconv"
+	"testing"
+
 	"github.com/eabz/btcutil"
 	"github.com/eabz/btcutil/chaincfg"
 	"github.com/ethereum/go-ethereum/common"
@@ -14,16 +20,11 @@ import (
 	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/grupokindynos/common/plutus"
 	"github.com/martinboehm/btcd/wire"
-	"math"
-	"math/big"
-	"reflect"
-	"strconv"
-	"testing"
 )
 
 func init() {
 	var i uint32
-	for key, _ := range coinfactory.Coins {
+	for key := range coinfactory.Coins {
 		coinConf, err := coinfactory.GetCoin(key)
 		if err != nil {
 			panic(err)

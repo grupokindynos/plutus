@@ -278,6 +278,9 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 		in := wire.NewTxIn(prevOut, nil, nil)
 		Tx.AddTxIn(in)
 	}
+	// To prevent address collision we need to de-register all networks and register just the network using
+	chaincfg.ResetParams()
+	chaincfg.Register(coinConfig.NetParams)
 	// Retrieve information for outputs
 	payAddr, err := btcutil.DecodeAddress(SendToAddressData.Address, coinConfig.NetParams)
 	if err != nil {
@@ -334,6 +337,10 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 	}
 	Tx.AddTxOut(txOut)
 	Tx.Version = txVersion
+	// To prevent address collision we need to de-register all networks and register just the network using
+	chaincfg.ResetParams()
+	chaincfg.Register(coinConfig.NetParams)
+
 	// Create the signatures
 	for i, utxo := range utxos {
 		path := strings.Split(utxo.Path, "/")
@@ -437,7 +444,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 		gasLimit = uint64(200000)
 	}
 	gasStation := GasStation{}
-	err = getJson("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
+	err = getJSON("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
 	if err != nil {
 		return "", errors.New("could not retrieve the gas price")
 	}
@@ -485,7 +492,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	//return "", nil
 }
 
-func getJson(url string, target interface{}) error {
+func getJSON(url string, target interface{}) error {
 	r, err := myClient.Get(url)
 	if err != nil {
 		return err
@@ -582,6 +589,9 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+		// To prevent address collision we need to de-register all networks and register just the network using
+		chaincfg.ResetParams()
+		chaincfg.Register(coinConfig.NetParams)
 		for _, out := range tx.MsgTx().TxOut {
 			outAmount := btcutil.Amount(out.Value)
 			if outAmount == value {
@@ -739,22 +749,13 @@ func NewPlutusController() *Controller {
 	// Here we handle only active coins
 	var i uint32
 	for _, coin := range coinfactory.Coins {
-		i += 1
+		i++
 		coinConf, err := coinfactory.GetCoin(coin.Info.Tag)
 		if err != nil {
 			panic(err)
 		}
 		if !coin.Info.Token && coin.Info.Tag != "ETH" {
-			coin.NetParams.Net = wire.BitcoinNet(i)
-			coin.NetParams.AddressMagicLen = 1
-			registered := chaincfg.IsRegistered(coin.NetParams)
-			if !registered {
-				err := chaincfg.Register(coin.NetParams)
-				if err != nil {
-					panic(err)
-				}
-			}
-			err := ctrl.getAddrs(coinConf)
+			err = ctrl.getAddrs(coinConf)
 			if err != nil {
 				log.Infof("Error: %v, Coin: %v", err.Error(), coin.Info.Name)
 			}
