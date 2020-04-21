@@ -647,6 +647,8 @@ func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
 }
 
 func getAccFromMnemonic(coinConfig *coins.Coin, priv bool) (*hdkeychain.ExtendedKey, error) {
+	chaincfg.ResetParams()
+	chaincfg.Register(coinConfig.NetParams)
 	if coinConfig.Mnemonic == "" {
 		return nil, errors.New("the coin is not available")
 	}
@@ -669,9 +671,8 @@ func getAccFromMnemonic(coinConfig *coins.Coin, priv bool) (*hdkeychain.Extended
 	}
 	if priv {
 		return accChild, nil
-	} else {
-		return accChild.Neuter()
 	}
+	return accChild.Neuter()
 }
 
 func getEthAccFromMnemonic(coinConfig *coins.Coin, saveWallet bool) (accounts.Account, error) {
