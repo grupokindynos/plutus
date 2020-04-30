@@ -502,11 +502,11 @@ func (c *ControllerV2) ValidateRawTxV2(params ParamsV2) (interface{}, error) {
 	//ethereum-like coins (and ERC20)
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
 		value := ValidateTxData.Amount
-		if params.Service == "ladon" && coinConfig.Info.Tag != "ETH" {
+		if (params.Service == "ladon" || params.Service == "tyche") && coinConfig.Info.Tag != "ETH" {
 			//remove the 1e8
 			valueNoSatoshi := float64(value) / 1e8
 			value = decimalToToken(valueNoSatoshi, coinConfig.Info.Decimals).Int64()
-		} else if params.Service == "ladon" && coinConfig.Info.Tag == "ETH" {
+		} else if (params.Service == "ladon" || params.Service == "tyche") && coinConfig.Info.Tag == "ETH" {
 			value = value * 1e10
 		}
 		var tx *types.Transaction
