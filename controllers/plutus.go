@@ -761,9 +761,7 @@ func NewPlutusController() *Controller {
 		Address: make(map[string]AddrInfo),
 	}
 	// Here we handle only active coins
-	var i uint32
 	for _, coin := range coinfactory.Coins {
-		i++
 		coinConf, err := coinfactory.GetCoin(coin.Info.Tag)
 		if err != nil {
 			panic(err)

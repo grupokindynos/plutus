@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/eabz/btcutil"
-	"github.com/eabz/btcutil/chaincfg"
 	"github.com/eabz/btcutil/txscript"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
@@ -643,25 +642,13 @@ func NewPlutusControllerV2() *ControllerV2 {
 	ctrl := &ControllerV2{
 		Address: make(map[string]AddrInfo),
 	}
-	// Here we handle only active coins
-	var i uint32
 	for _, coin := range coinfactory.Coins {
-		i += 1
 		coinConf, err := coinfactory.GetCoin(coin.Info.Tag)
 		if err != nil {
 			panic(err)
 		}
 		if !coin.Info.Token && coin.Info.Tag != "ETH" {
-			coin.NetParams.Net = wire.BitcoinNet(i)
-			coin.NetParams.AddressMagicLen = 1
-			registered := chaincfg.IsRegistered(coin.NetParams)
-			if !registered {
-				err := chaincfg.Register(coin.NetParams)
-				if err != nil {
-					panic(err)
-				}
-			}
-			err := ctrl.getAddrs(coinConf)
+			err = ctrl.getAddrs(coinConf)
 			if err != nil {
 				log.Infof("Error: %v, Coin: %v", err.Error(), coin.Info.Name)
 			}
