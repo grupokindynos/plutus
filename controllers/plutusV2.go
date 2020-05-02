@@ -404,8 +404,8 @@ func (c *ControllerV2) sendToAddressEthV2(SendToAddressData plutus.SendAddressBo
 	if coinConfig.Info.Tag != "ETH" {
 		gasLimit = uint64(200000)
 	}
-	gasStation := GasStation{}
-	err = getJson("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
+	var gasStation GasStation
+	err = getJSON("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
 	if err != nil {
 		return "", errors.New("could not retrieve the gas price")
 	}
