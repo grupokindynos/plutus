@@ -552,7 +552,6 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 		if ValidateTxData.RawTx[0:2] == "0x" {
 			ValidateTxData.RawTx = ValidateTxData.RawTx[2:]
 		}
-		//if ValidateTxData.RawTx[]
 		rawtx, err := hex.DecodeString(ValidateTxData.RawTx)
 		if err != nil {
 			return nil, err
