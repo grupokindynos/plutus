@@ -4,8 +4,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"math"
+	"math/big"
+	"reflect"
+	"strconv"
+	"testing"
+
 	"github.com/eabz/btcutil"
-	"github.com/eabz/btcutil/chaincfg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -13,33 +18,7 @@ import (
 	coinfactory "github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/grupokindynos/common/plutus"
-	"github.com/martinboehm/btcd/wire"
-	"math"
-	"math/big"
-	"reflect"
-	"strconv"
-	"testing"
 )
-
-func init() {
-	var i uint32
-	for key, _ := range coinfactory.Coins {
-		coinConf, err := coinfactory.GetCoin(key)
-		if err != nil {
-			panic(err)
-		}
-		if !coinConf.Info.Token && coinConf.Info.Tag != "ETH" {
-			i += 1
-			coinConf.NetParams.AddressMagicLen = 1
-			coinConf.NetParams.Net = wire.BitcoinNet(i)
-			err := chaincfg.Register(coinConf.NetParams)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-
-}
 
 var testMnemonic = "maximum potato bitter govern rebuild elegant nest boring note caution wedding exercise near chimney narrow"
 
