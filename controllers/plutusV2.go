@@ -5,18 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"math"
-	"math/big"
-	"net/http"
-	"os"
-	"reflect"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/eabz/btcutil"
 	"github.com/eabz/btcutil/chaincfg"
-	"github.com/eabz/btcutil/hdkeychain"
 	"github.com/eabz/btcutil/txscript"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,47 +18,34 @@ import (
 	"github.com/grupokindynos/common/coin-factory/coins"
 	"github.com/grupokindynos/common/plutus"
 	"github.com/grupokindynos/plutus/models"
-	"github.com/martinboehm/btcd/btcec"
 	"github.com/martinboehm/btcd/chaincfg/chainhash"
 	"github.com/martinboehm/btcd/wire"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
-	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/sha3"
+	"math"
+	"math/big"
+	"os"
+	"reflect"
+	"strconv"
+	"strings"
 )
 
-type Params struct {
-	Coin string
-	Body []byte
-	Txid string
+type ParamsV2 struct {
+	Coin    string
+	Body    []byte
+	Txid    string
+	Service string
 }
 
-var ethWallet *hdwallet.Wallet
-
-var myClient = &http.Client{Timeout: 10 * time.Second}
-
-const addrGap = 20
-
-type AddrInfo struct {
-	LastUsed int
-	AddrInfo []models.AddrInfo
-}
-
-type Controller struct {
+type ControllerV2 struct {
 	Address map[string]AddrInfo
 }
 
-type GasStation struct {
-	Fast        float64 `json:"fast"`
-	Fastest     float64 `json:"fastest"`
-	SafeLow     float64 `json:"safeLow"`
-	Average     float64 `json:"average"`
-	SafeLowWait float64 `json:"safeLowWait"`
-	AvgWait     float64 `json:"avgWait"`
-	FastWait    float64 `json:"fastWait"`
-	FastestWait float64 `json:"fastestWait"`
-}
+var ethWalletV2 *hdwallet.Wallet
 
-func (c *Controller) GetBalance(params Params) (interface{}, error) {
+const coinV2 = "ETHV2"
+
+func (c *ControllerV2) GetBalanceV2(params ParamsV2) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(params.Coin)
 	if err != nil {
 		return nil, err
@@ -102,7 +79,10 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		acc, err := getEthAccFromMnemonic(ethConfig, false)
+		if params.Service == "tyche" || params.Service == "ladon" {
+			ethConfig.Mnemonic = os.Getenv("MNEMONIC_" + coinV2)
+		}
+		acc, err := getEthAccFromMnemonicV2(ethConfig, false)
 		if err != nil {
 			return nil, err
 		}
@@ -141,38 +121,23 @@ func (c *Controller) GetBalance(params Params) (interface{}, error) {
 	}
 }
 
-func ercDetails(info blockbook.EthAddr, contract string) *blockbook.EthTokens {
-	var tokenInfo *blockbook.EthTokens
-	for _, token := range info.Tokens {
-		if common.HexToAddress(contract) == common.HexToAddress(token.Contract) {
-			tokenInfo = &token
-			break
-		}
-	}
-	return tokenInfo
-}
-
-func (c *Controller) GetAddress(params Params) (interface{}, error) {
+func (c *ControllerV2) GetAddressV2(params ParamsV2) (interface{}, error) {
 	coinConfig, err := coinfactory.GetCoin(params.Coin)
 	if err != nil {
 		return nil, err
 	}
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
+		ethConfig, err := coinfactory.GetCoin("ETH")
+		if err != nil {
+			return nil, err
+		}
+		if params.Service == "tyche" || params.Service == "ladon" {
+			ethConfig.Mnemonic = os.Getenv("MNEMONIC_" + coinV2)
+		}
 		var acc accounts.Account
-		if coinConfig.Mnemonic == "" {
-			ethConfig, err := coinfactory.GetCoin("ETH")
-			if err != nil {
-				return nil, err
-			}
-			acc, err = getEthAccFromMnemonic(ethConfig, false)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			acc, err = getEthAccFromMnemonic(coinConfig, false)
-			if err != nil {
-				return nil, err
-			}
+		acc, err = getEthAccFromMnemonicV2(ethConfig, false)
+		if err != nil {
+			return nil, err
 		}
 		return acc.Address.Hex(), nil
 	}
@@ -204,7 +169,7 @@ func (c *Controller) GetAddress(params Params) (interface{}, error) {
 	return addr.String(), nil
 }
 
-func (c *Controller) SendToAddress(params Params) (interface{}, error) {
+func (c *ControllerV2) SendToAddressV2(params ParamsV2) (interface{}, error) {
 	var SendToAddressData plutus.SendAddressBodyReq
 	err := json.Unmarshal(params.Body, &SendToAddressData)
 	if err != nil {
@@ -216,7 +181,7 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	}
 	var txid string
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
-		txid, err = c.sendToAddressEth(SendToAddressData, coinConfig)
+		txid, err = c.sendToAddressEthV2(SendToAddressData, coinConfig, params.Service)
 		if err != nil {
 			return nil, err
 		}
@@ -229,7 +194,7 @@ func (c *Controller) SendToAddress(params Params) (interface{}, error) {
 	return txid, nil
 }
 
-func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin) (string, error) {
+func (c *ControllerV2) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin) (string, error) {
 	value, err := btcutil.NewAmount(SendToAddressData.Amount)
 	if err != nil {
 		return "", err
@@ -278,9 +243,6 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 		in := wire.NewTxIn(prevOut, nil, nil)
 		Tx.AddTxIn(in)
 	}
-	// To prevent address collision we need to de-register all networks and register just the network using
-	chaincfg.ResetParams()
-	chaincfg.Register(coinConfig.NetParams)
 	// Retrieve information for outputs
 	payAddr, err := btcutil.DecodeAddress(SendToAddressData.Address, coinConfig.NetParams)
 	if err != nil {
@@ -337,10 +299,6 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 	}
 	Tx.AddTxOut(txOut)
 	Tx.Version = txVersion
-	// To prevent address collision we need to de-register all networks and register just the network using
-	chaincfg.ResetParams()
-	chaincfg.Register(coinConfig.NetParams)
-
 	// Create the signatures
 	for i, utxo := range utxos {
 		path := strings.Split(utxo.Path, "/")
@@ -381,14 +339,17 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 	return blockBookWrap.SendTx(rawTx)
 }
 
-func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin) (string, error) {
+func (c *ControllerV2) sendToAddressEthV2(SendToAddressData plutus.SendAddressBodyReq, coinConfig *coins.Coin, service string) (string, error) {
 	// using the ethereum account to hl the tokens
 	ethConfig, err := coinfactory.GetCoin("ETH")
 	if err != nil {
 		return "", err
 	}
 	//**get the account that holds the private keys and addresses
-	account, err := getEthAccFromMnemonic(ethConfig, true)
+	if service == "tyche" || service == "ladon" {
+		ethConfig.Mnemonic = os.Getenv("MNEMONIC_" + coinV2)
+	}
+	account, err := getEthAccFromMnemonicV2(ethConfig, true)
 	if err != nil {
 		return "", err
 	}
@@ -443,7 +404,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	if coinConfig.Info.Tag != "ETH" {
 		gasLimit = uint64(200000)
 	}
-	gasStation := GasStation{}
+	var gasStation GasStation
 	err = getJSON("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
 	if err != nil {
 		return "", errors.New("could not retrieve the gas price")
@@ -481,7 +442,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 		tx = types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
 	}
 	// **sign and send
-	signedTx, err := signEthTx(ethConfig, account, tx, nil)
+	signedTx, err := signEthTxV2(ethConfig, account, tx, nil)
 	if err != nil {
 		return "", errors.New("failed to sign transaction")
 	}
@@ -492,17 +453,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	//return "", nil
 }
 
-func getJSON(url string, target interface{}) error {
-	r, err := myClient.Get(url)
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
-
-	return json.NewDecoder(r.Body).Decode(target)
-}
-
-func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
+func (c *ControllerV2) ValidateAddressV2(params ParamsV2) (interface{}, error) {
 	var ValidateAddressData models.AddressValidationBodyReq
 	err := json.Unmarshal(params.Body, &ValidateAddressData)
 	if err != nil {
@@ -517,7 +468,10 @@ func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		acc, err := getEthAccFromMnemonic(coinConfig, false)
+		if params.Service == "tyche" || params.Service == "ladon" {
+			coinConfig.Mnemonic = os.Getenv("MNEMONIC_" + coinV2)
+		}
+		acc, err := getEthAccFromMnemonicV2(coinConfig, false)
 		if err != nil {
 			return nil, err
 		}
@@ -532,7 +486,7 @@ func (c *Controller) ValidateAddress(params Params) (interface{}, error) {
 	return isMine, nil
 }
 
-func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
+func (c *ControllerV2) ValidateRawTxV2(params ParamsV2) (interface{}, error) {
 	var ValidateTxData plutus.ValidateRawTxReq
 	err := json.Unmarshal(params.Body, &ValidateTxData)
 	if err != nil {
@@ -548,10 +502,18 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 	//ethereum-like coins (and ERC20)
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
 		value := ValidateTxData.Amount
+		if (params.Service == "ladon" || params.Service == "tyche") && coinConfig.Info.Tag != "ETH" {
+			//remove the 1e8
+			valueNoSatoshi := float64(value) / 1e8
+			value = decimalToToken(valueNoSatoshi, coinConfig.Info.Decimals).Int64()
+		} else if (params.Service == "ladon" || params.Service == "tyche") && coinConfig.Info.Tag == "ETH" {
+			value = value * 1e10
+		}
 		var tx *types.Transaction
 		if ValidateTxData.RawTx[0:2] == "0x" {
 			ValidateTxData.RawTx = ValidateTxData.RawTx[2:]
 		}
+		//if ValidateTxData.RawTx[]
 		rawtx, err := hex.DecodeString(ValidateTxData.RawTx)
 		if err != nil {
 			return nil, err
@@ -592,9 +554,6 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		// To prevent address collision we need to de-register all networks and register just the network using
-		chaincfg.ResetParams()
-		chaincfg.Register(coinConfig.NetParams)
 		for _, out := range tx.MsgTx().TxOut {
 			outAmount := btcutil.Amount(out.Value)
 			if outAmount == value {
@@ -623,7 +582,38 @@ func (c *Controller) ValidateRawTx(params Params) (interface{}, error) {
 	}
 }
 
-func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
+func getEthAccFromMnemonicV2(coinConfig *coins.Coin, saveWallet bool) (accounts.Account, error) {
+	if coinConfig.Mnemonic == "" {
+		return accounts.Account{}, errors.New("the coin is not available")
+	}
+	wallet, err := hdwallet.NewFromMnemonic(coinConfig.Mnemonic)
+	if err != nil {
+		return accounts.Account{}, err
+	}
+	// standard for eth wallets like Metamask
+	path := hdwallet.MustParseDerivationPath("m/44'/60'/0'/0/0")
+	account, err := wallet.Derive(path, true)
+	if err != nil {
+		return accounts.Account{}, err
+	}
+	if saveWallet {
+		ethWalletV2 = wallet
+	}
+	return account, nil
+}
+
+func signEthTxV2(coinConfig *coins.Coin, account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
+	if coinConfig.Mnemonic == "" {
+		return nil, errors.New("the coin is not available")
+	}
+	signedTx, err := ethWalletV2.SignTx(account, tx, chainID)
+	if err != nil {
+		return nil, err
+	}
+	return signedTx, nil
+}
+
+func (c *ControllerV2) getAddrs(coinConfig *coins.Coin) error {
 	acc, err := getAccFromMnemonic(coinConfig, false)
 	if err != nil {
 		return err
@@ -649,127 +639,29 @@ func (c *Controller) getAddrs(coinConfig *coins.Coin) error {
 	return nil
 }
 
-func getAccFromMnemonic(coinConfig *coins.Coin, priv bool) (*hdkeychain.ExtendedKey, error) {
-	chaincfg.ResetParams()
-	chaincfg.Register(coinConfig.NetParams)
-	if coinConfig.Mnemonic == "" {
-		return nil, errors.New("the coin is not available")
-	}
-	seed := bip39.NewSeed(coinConfig.Mnemonic, os.Getenv("MNEMONIC_PASSWORD"))
-	mKey, err := hdkeychain.NewMaster(seed, coinConfig.NetParams)
-	if err != nil {
-		return nil, err
-	}
-	purposeChild, err := mKey.Child(hdkeychain.HardenedKeyStart + 44)
-	if err != nil {
-		return nil, err
-	}
-	coinType, err := purposeChild.Child(hdkeychain.HardenedKeyStart + coinConfig.NetParams.HDCoinType)
-	if err != nil {
-		return nil, err
-	}
-	accChild, err := coinType.Child(hdkeychain.HardenedKeyStart + 0)
-	if err != nil {
-		return nil, err
-	}
-	if priv {
-		return accChild, nil
-	}
-	return accChild.Neuter()
-}
-
-func getEthAccFromMnemonic(coinConfig *coins.Coin, saveWallet bool) (accounts.Account, error) {
-	if coinConfig.Mnemonic == "" {
-		return accounts.Account{}, errors.New("the coin is not available")
-	}
-	wallet, err := hdwallet.NewFromMnemonic(coinConfig.Mnemonic)
-	if err != nil {
-		return accounts.Account{}, err
-	}
-	// standard for eth wallets like Metamask
-	path := hdwallet.MustParseDerivationPath("m/44'/60'/0'/0/0")
-	account, err := wallet.Derive(path, true)
-	if err != nil {
-		return accounts.Account{}, err
-	}
-	if saveWallet {
-		ethWallet = wallet
-	}
-	return account, nil
-}
-
-func signEthTx(coinConfig *coins.Coin, account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
-	if coinConfig.Mnemonic == "" {
-		return nil, errors.New("the coin is not available")
-	}
-	signedTx, err := ethWallet.SignTx(account, tx, chainID)
-	if err != nil {
-		return nil, err
-	}
-	return signedTx, nil
-}
-
-func DecodeERC20Data(b []byte) ([]byte, *big.Int) {
-	to := b[32:72]
-	tokens := b[74:136]
-	hexed, _ := hex.DecodeString(string(tokens))
-	amount := big.NewInt(0)
-	amount.SetBytes(hexed)
-	return to, amount
-}
-
-func decimalToToken(decimalAmount float64, decimals int) *big.Int {
-	val := new(big.Float)
-	pot := new(big.Float)
-	val.SetFloat64(decimalAmount)
-	pot.SetFloat64(math.Pow10(decimals))
-	val.Mul(val, pot)
-	amount, _ := val.Int(nil)
-	return amount
-}
-
-func getPubKeyHashFromPath(acc *hdkeychain.ExtendedKey, coinConfig *coins.Coin, path uint32) (string, error) {
-	directExtended, err := acc.Child(0)
-	if err != nil {
-		return "", err
-	}
-	addrExtPub, err := directExtended.Child(path)
-	if err != nil {
-		return "", err
-	}
-	addr, err := addrExtPub.Address(coinConfig.NetParams)
-	if err != nil {
-		return "", err
-	}
-	return addr.String(), nil
-}
-
-func getPrivKeyFromPath(acc *hdkeychain.ExtendedKey, path uint32) (*btcec.PrivateKey, error) {
-	directExtended, err := acc.Child(0)
-	if err != nil {
-		return nil, err
-	}
-	accPath, err := directExtended.Child(path)
-	if err != nil {
-		return nil, err
-	}
-	return accPath.ECPrivKey()
-}
-
-func NewPlutusController() *Controller {
-	ctrl := &Controller{
+func NewPlutusControllerV2() *ControllerV2 {
+	ctrl := &ControllerV2{
 		Address: make(map[string]AddrInfo),
 	}
 	// Here we handle only active coins
 	var i uint32
 	for _, coin := range coinfactory.Coins {
-		i++
+		i += 1
 		coinConf, err := coinfactory.GetCoin(coin.Info.Tag)
 		if err != nil {
 			panic(err)
 		}
 		if !coin.Info.Token && coin.Info.Tag != "ETH" {
-			err = ctrl.getAddrs(coinConf)
+			coin.NetParams.Net = wire.BitcoinNet(i)
+			coin.NetParams.AddressMagicLen = 1
+			registered := chaincfg.IsRegistered(coin.NetParams)
+			if !registered {
+				err := chaincfg.Register(coin.NetParams)
+				if err != nil {
+					panic(err)
+				}
+			}
+			err := ctrl.getAddrs(coinConf)
 			if err != nil {
 				log.Infof("Error: %v, Coin: %v", err.Error(), coin.Info.Name)
 			}
