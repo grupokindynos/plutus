@@ -643,12 +643,8 @@ func NewPlutusControllerV2() *ControllerV2 {
 		Address: make(map[string]AddrInfo),
 	}
 	for _, coin := range coinfactory.Coins {
-		coinConf, err := coinfactory.GetCoin(coin.Info.Tag)
-		if err != nil {
-			panic(err)
-		}
 		if !coin.Info.Token && coin.Info.Tag != "ETH" {
-			err = ctrl.getAddrs(coinConf)
+			err := ctrl.getAddrs(coin)
 			if err != nil {
 				log.Infof("Error: %v, Coin: %v", err.Error(), coin.Info.Name)
 			}

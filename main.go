@@ -1,6 +1,10 @@
 package main
 
 import (
+	"io/ioutil"
+	"net/http"
+	"os"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/grupokindynos/common/responses"
@@ -9,8 +13,6 @@ import (
 	"github.com/grupokindynos/plutus/controllers"
 	_ "github.com/heroku/x/hmetrics/onload"
 	_ "github.com/joho/godotenv/autoload"
-	"net/http"
-	"os"
 )
 
 func main() {
@@ -60,29 +62,17 @@ func ApplyRoutes(r *gin.Engine) {
 }
 
 func VerifyRequest(c *gin.Context, method func(params controllers.Params) (interface{}, error)) {
-	payload, err := mvt.VerifyRequest(c)
-	if err != nil {
-		responses.GlobalResponseNoAuth(c)
-		return
-	}
+	body, _ := ioutil.ReadAll(c.Request.Body)
 	params := controllers.Params{
 		Coin: c.Param("coin"),
 		Txid: c.Param("txid"),
-		Body: payload,
+		Body: body,
 	}
 	response, err := method(params)
-	if err != nil {
-		responses.GlobalResponseError(nil, err, c)
-		return
-	}
-	header, body, err := mrt.CreateMRTToken("plutus", os.Getenv("MASTER_PASSWORD"), response, os.Getenv("PLUTUS_PRIVATE_KEY"))
-	if err != nil {
-		responses.GlobalResponseError(nil, err, c)
-		return
-	}
-	responses.GlobalResponseMRT(header, body, c)
+	responses.GlobalResponseError(response, err, c)
 	return
 }
+
 func VerifyRequestV2(c *gin.Context, method func(params controllers.ParamsV2) (interface{}, error)) {
 	payload, err := mvt.VerifyRequest(c)
 	if err != nil {
