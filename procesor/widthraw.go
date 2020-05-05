@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/grupokindynos/adrestia-go/models"
+	"github.com/grupokindynos/common/plutus"
 	"github.com/grupokindynos/common/tokens/mrt"
 	"github.com/grupokindynos/common/tokens/mvt"
-	"github.com/grupokindynos/common/plutus"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -53,9 +53,9 @@ func main() {
 				continue
 			}
 			sendInfo := plutus.SendAddressBodyReq{
-				Amount: plutusBalance.Confirmed,
+				Amount:  plutusBalance.Confirmed,
 				Address: address,
-				Coin: coin.Info.Tag,
+				Coin:    coin.Info.Tag,
 			}
 			rawData, err := json.Marshal(sendInfo)
 			if err != nil {
