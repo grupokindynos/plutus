@@ -72,10 +72,13 @@ func main() {
 }
 
 func checkSend(balance float64, coin string) bool {
-	if coin != "BTC" && balance > 1 {
+	if coin != "BTC" && coin != "LTC" && balance > 1 {
 		return true
 	}
 	if coin == "BTC" && balance > 0.001 {
+		return true
+	}
+	if coin == "LTC" && balance > 0.1 {
 		return true
 	}
 	return false

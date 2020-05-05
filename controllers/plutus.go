@@ -332,8 +332,9 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 			Value:    int64(((availableAmount - value) - payingFee).ToUnit(btcutil.AmountSatoshi)),
 			PkScript: pkScriptChange,
 		}
-
 		Tx.AddTxOut(txOutChange)
+	} else {
+		txOut.Value = int64((value - payingFee).ToUnit(btcutil.AmountSatoshi))
 	}
 	Tx.AddTxOut(txOut)
 	Tx.Version = txVersion
