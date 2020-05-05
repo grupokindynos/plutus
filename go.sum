@@ -147,8 +147,6 @@ github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMo
 github.com/garyburd/redigo v1.6.0/go.mod h1:NR3MbYisc3/PwhQ00EMzDiPmrwpPxAn5GI05/YaO1SY=
 github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff/go.mod h1:x7DCsMOv1taUwEWCzT4cmDeAkigA5/QCwUodaVOe8Ww=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
-github.com/gin-contrib/cors v1.3.0 h1:PolezCc89peu+NgkIWt9OB01Kbzt6IP0J/JvkG6xxlg=
-github.com/gin-contrib/cors v1.3.0/go.mod h1:artPvLlhkF7oG06nK8v3U8TNz6IeX+w1uzCSEId5/Vc=
 github.com/gin-contrib/cors v1.3.1 h1:doAsuITavI4IOcd0Y19U4B+O0dNWihRyX//nn4sEmgA=
 github.com/gin-contrib/cors v1.3.1/go.mod h1:jjEJ4268OPZUcU7k9Pm653S7lXUGcqMADzFA61xsmDk=
 github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3/go.mod h1:VJ0WA2NBN22VlZ2dKZQPAPnyWw5XTlK1KymzLKsr59s=
@@ -236,6 +234,8 @@ github.com/grupokindynos/adrestia-go v0.0.0-20200501223051-2597c8b41e89 h1:zLrxb
 github.com/grupokindynos/adrestia-go v0.0.0-20200501223051-2597c8b41e89/go.mod h1:+iqdTqOb5V9PrEjCb6dJdNka30MeXxKqgHqsXms08c0=
 github.com/grupokindynos/common v0.0.0-20200501195405-3604aabfdc29 h1:DhLnj8Ae36sqabpcifXPkddr4gIWn1TBFlL4CyWYqRY=
 github.com/grupokindynos/common v0.0.0-20200501195405-3604aabfdc29/go.mod h1:TmP70nKfgs35046GoB8TIq1r1OFvEHYaaEvaPs6PayM=
+github.com/grupokindynos/common v0.0.0-20200505162244-6319c84e5fca h1:9v1rHqFyfmjqTvqHEYV640lOwrwo+pE9EPUE4IjgkfA=
+github.com/grupokindynos/common v0.0.0-20200505162244-6319c84e5fca/go.mod h1:TmP70nKfgs35046GoB8TIq1r1OFvEHYaaEvaPs6PayM=
 github.com/grupokindynos/go-binance v0.0.0-20200430034119-30d9d0485f22/go.mod h1:RgYTB+ZsGwA2qfu4o9ObHcsGijn3F04BdV5Nv0mmMqI=
 github.com/hashicorp/consul/api v1.3.0/go.mod h1:MmDNSzIMUjNpY/mQ398R4bk2FnqQLoPndWW5VkKPlCE=
 github.com/hashicorp/consul/sdk v0.3.0/go.mod h1:VKf9jXwCTEY1QZP2MOLRhb5i/I/ssyNV1vwHyQBF0x8=
