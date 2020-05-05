@@ -295,6 +295,8 @@ func (c *ControllerV2) sendToAddress(SendToAddressData plutus.SendAddressBodyReq
 		}
 
 		Tx.AddTxOut(txOutChange)
+	} else {
+		txOut.Value = int64((value - payingFee).ToUnit(btcutil.AmountSatoshi))
 	}
 	Tx.AddTxOut(txOut)
 	Tx.Version = txVersion
