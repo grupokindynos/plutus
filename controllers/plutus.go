@@ -22,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/google/martian/log"
 	"github.com/grupokindynos/common/blockbook"
 	coinfactory "github.com/grupokindynos/common/coin-factory"
 	"github.com/grupokindynos/common/coin-factory/coins"
@@ -332,8 +331,9 @@ func (c *Controller) sendToAddress(SendToAddressData plutus.SendAddressBodyReq, 
 			Value:    int64(((availableAmount - value) - payingFee).ToUnit(btcutil.AmountSatoshi)),
 			PkScript: pkScriptChange,
 		}
-
 		Tx.AddTxOut(txOutChange)
+	} else {
+		txOut.Value = int64((value - payingFee).ToUnit(btcutil.AmountSatoshi))
 	}
 	Tx.AddTxOut(txOut)
 	Tx.Version = txVersion
@@ -761,15 +761,15 @@ func NewPlutusController() *Controller {
 		Address: make(map[string]AddrInfo),
 	}
 	// Here we handle only active coins
-	for _, coin := range coinfactory.Coins {
-		coinConf, err := coinfactory.GetCoin(coin.Info.Tag)
+	for tag := range coinfactory.Coins {
+		coin, err := coinfactory.GetCoin(tag)
 		if err != nil {
 			panic(err)
 		}
-		if !coin.Info.Token && coin.Info.Tag != "ETH" {
-			err = ctrl.getAddrs(coinConf)
+		if !coin.Info.Token && coin.Info.Tag != "ETH" && coin.Info.Tag != "XSG" && coin.Info.Tag != "DAPS" {
+			err := ctrl.getAddrs(coin)
 			if err != nil {
-				log.Infof("Error: %v, Coin: %v", err.Error(), coin.Info.Name)
+				panic(errors.New(err.Error() + " " + coin.Info.Tag))
 			}
 		}
 	}
