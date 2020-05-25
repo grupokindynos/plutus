@@ -435,7 +435,7 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	if err != nil {
 		return "", errors.New("nonce failed")
 	}
-
+	nonce += uint64(info.UnconfirmedTxs)
 	//** Retrieve information for outputs: out address
 	toAddress := common.HexToAddress(SendToAddressData.Address)
 	//**calculate fee/gas cost
