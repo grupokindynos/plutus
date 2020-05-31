@@ -183,13 +183,13 @@ func (c *ControllerV2) SendToAddressV2(params ParamsV2) (interface{}, error) {
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
 		txid, err = c.sendToAddressEthV2(SendToAddressData, coinConfig, params.Service)
 		if err != nil {
-			log.Println("ERROR::sendToAddressEthV2::Unmarshalling data", err, SendToAddressData)
+			log.Println("ERROR::SendToAddressV2::sendToAddressEthV2", err, SendToAddressData)
 			return nil, err
 		}
 	} else {
 		txid, err = c.sendToAddress(SendToAddressData, coinConfig)
 		if err != nil {
-			log.Println("ERROR::sendToAddress::Unmarshalling data", err, SendToAddressData)
+			log.Println("ERROR::SendToAddressV2::sendToAddress", err, SendToAddressData)
 			return nil, err
 		}
 	}
@@ -233,12 +233,14 @@ func (c *ControllerV2) sendToAddress(SendToAddressData plutus.SendAddressBodyReq
 		}
 		intValue, err := strconv.ParseInt(utxo.Value, 10, 64)
 		if err != nil {
+			log.Println("ERROR::sendToAddress::ParseInt", utxo.Value)
 			return "", err
 		}
 		utxoAmount := btcutil.Amount(intValue)
 		availableAmount += utxoAmount
 		txidHash, err := chainhash.NewHashFromStr(utxo.Txid)
 		if err != nil {
+			log.Println("ERROR::sendToAddress::NewHashFromStr", utxo.Txid)
 			return "", err
 		}
 		prevOut := wire.NewOutPoint(txidHash, uint32(utxo.Vout))
@@ -248,18 +250,22 @@ func (c *ControllerV2) sendToAddress(SendToAddressData plutus.SendAddressBodyReq
 	// Retrieve information for outputs
 	payAddr, err := btcutil.DecodeAddress(SendToAddressData.Address, coinConfig.NetParams)
 	if err != nil {
+		log.Println("ERROR::sendToAddress::DecodeAddress", SendToAddressData.Address, " ", coinConfig.NetParams)
 		return "", err
 	}
 	changeAddr, err := btcutil.DecodeAddress(changeAddrPubKeyHash, coinConfig.NetParams)
 	if err != nil {
+		log.Println("ERROR::sendToAddress::DecodeAddress::Change", changeAddrPubKeyHash, " ", coinConfig.NetParams)
 		return "", err
 	}
 	pkScriptPay, err := txscript.PayToAddrScript(payAddr)
 	if err != nil {
+		log.Println("ERROR::sendToAddress::PayToAddrScript", payAddr)
 		return "", err
 	}
 	pkScriptChange, err := txscript.PayToAddrScript(changeAddr)
 	if err != nil {
+		log.Println("ERROR::sendToAddress::PayToAddrScript::Change", changeAddr)
 		return "", err
 	}
 	txOut := &wire.TxOut{
@@ -270,11 +276,13 @@ func (c *ControllerV2) sendToAddress(SendToAddressData plutus.SendAddressBodyReq
 	if SendToAddressData.Coin == "BTC" {
 		fee, err = blockBookWrap.GetFee("4")
 		if err != nil {
+			log.Println("ERROR::sendToAddress::GetFee")
 			return "", err
 		}
 	} else {
 		fee, err = blockBookWrap.GetFee("2")
 		if err != nil {
+			log.Println("ERROR::sendToAddress::GetFee")
 			return "", err
 		}
 	}
@@ -284,6 +292,7 @@ func (c *ControllerV2) sendToAddress(SendToAddressData plutus.SendAddressBodyReq
 	} else {
 		feeParse, err := strconv.ParseFloat(fee.Result, 64)
 		if err != nil {
+			log.Println("ERROR::sendToAddress::ParseFloat", fee.Result)
 			return "", err
 		}
 		feeRate = int64(feeParse * 1e8)
@@ -308,18 +317,22 @@ func (c *ControllerV2) sendToAddress(SendToAddressData plutus.SendAddressBodyReq
 		path := strings.Split(utxo.Path, "/")
 		pathParse, err := strconv.ParseInt(path[5], 10, 64)
 		if err != nil {
+			log.Println("ERROR::sendToAddress::ParseInt")
 			return "", err
 		}
 		privKey, err := getPrivKeyFromPath(acc, uint32(pathParse))
 		if err != nil {
+			log.Println("ERROR::sendToAddress::getPrivKeyFromPath::", acc)
 			return "", err
 		}
 		addr, err := btcutil.DecodeAddress(utxo.Address, coinConfig.NetParams)
 		if err != nil {
+			log.Println("ERROR::sendToAddress::DecodeAddress::utxo", utxo.Address)
 			return "", err
 		}
 		subscript, err := txscript.PayToAddrScript(addr)
 		if err != nil {
+			log.Println("ERROR::sendToAddress::PayToAddrScript::utxo", addr)
 			return "", err
 		}
 		var sigHash txscript.SigHashHasher
@@ -330,6 +343,7 @@ func (c *ControllerV2) sendToAddress(SendToAddressData plutus.SendAddressBodyReq
 		}
 		sigScript, err := txscript.SignatureScript(&Tx, i, subscript, txscript.SigHashAll, privKey, true, sigHash)
 		if err != nil {
+			log.Println("ERROR::sendToAddress::SignatureScript::utxo", Tx, privKey)
 			return "", err
 		}
 		Tx.TxIn[i].SignatureScript = sigScript
@@ -337,9 +351,11 @@ func (c *ControllerV2) sendToAddress(SendToAddressData plutus.SendAddressBodyReq
 	buf := bytes.NewBuffer([]byte{})
 	err = Tx.BtcEncode(buf, 0, wire.BaseEncoding)
 	if err != nil {
+		log.Println("ERROR::sendToAddress::BtcEncode::", buf)
 		return "", err
 	}
 	rawTx := hex.EncodeToString(buf.Bytes())
+	log.Println("INFO:: RAW TX :: ", rawTx)
 	return blockBookWrap.SendTx(rawTx)
 }
 
