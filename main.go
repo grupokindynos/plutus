@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"reflect"
@@ -169,7 +170,7 @@ func runCrons(mainWg *sync.WaitGroup, ctrl *controllers.Controller) {
 	}()
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go runCronMinutes(5, runSend, &wg, ctrl) // 5 minutes
+	go runCronMinutes(180, runSend, &wg, ctrl) // 180 minutes
 	wg.Wait()
 }
 
@@ -224,8 +225,9 @@ func runSend(ctrl *controllers.Controller) {
 				Coin: coin.Info.Tag,
 				Body: rawData,
 			}
-			txid, err := ctrl.SendToAddress(newParams)
-			fmt.Println(txid, err)
+			txId, err := ctrl.SendToAddress(newParams)
+			log.Println("sent ", sendInfo.Amount , " ", sendInfo.Coin, " to ", sendInfo.Address)
+			fmt.Println(txId, err)
 		}
 	}
 }
