@@ -20,6 +20,7 @@ import (
 	"github.com/martinboehm/btcd/wire"
 	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"golang.org/x/crypto/sha3"
+	"log"
 	"math"
 	"math/big"
 	"os"
@@ -171,6 +172,7 @@ func (c *ControllerV2) SendToAddressV2(params ParamsV2) (interface{}, error) {
 	var SendToAddressData plutus.SendAddressBodyReq
 	err := json.Unmarshal(params.Body, &SendToAddressData)
 	if err != nil {
+		log.Println("ERROR::SendToAddressV2::Unmarshalling data", err, params.Body)
 		return nil, err
 	}
 	coinConfig, err := coinfactory.GetCoin(SendToAddressData.Coin)
@@ -181,11 +183,13 @@ func (c *ControllerV2) SendToAddressV2(params ParamsV2) (interface{}, error) {
 	if coinConfig.Info.Token || coinConfig.Info.Tag == "ETH" {
 		txid, err = c.sendToAddressEthV2(SendToAddressData, coinConfig, params.Service)
 		if err != nil {
+			log.Println("ERROR::sendToAddressEthV2::Unmarshalling data", err, SendToAddressData)
 			return nil, err
 		}
 	} else {
 		txid, err = c.sendToAddress(SendToAddressData, coinConfig)
 		if err != nil {
+			log.Println("ERROR::sendToAddress::Unmarshalling data", err, SendToAddressData)
 			return nil, err
 		}
 	}
