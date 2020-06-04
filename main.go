@@ -226,7 +226,7 @@ func runSend(ctrl *controllers.Controller) {
 				Body: rawData,
 			}
 			txId, err := ctrl.SendToAddress(newParams)
-			log.Println("sent ", sendInfo.Amount , " ", sendInfo.Coin, " to ", sendInfo.Address)
+			log.Println("sent ", sendInfo.Amount, " ", sendInfo.Coin, " to ", sendInfo.Address)
 			fmt.Println(txId, err)
 		}
 	}

@@ -234,8 +234,8 @@ github.com/grupokindynos/adrestia-go v0.0.0-20200501223051-2597c8b41e89 h1:zLrxb
 github.com/grupokindynos/adrestia-go v0.0.0-20200501223051-2597c8b41e89/go.mod h1:+iqdTqOb5V9PrEjCb6dJdNka30MeXxKqgHqsXms08c0=
 github.com/grupokindynos/common v0.0.0-20200501195405-3604aabfdc29 h1:DhLnj8Ae36sqabpcifXPkddr4gIWn1TBFlL4CyWYqRY=
 github.com/grupokindynos/common v0.0.0-20200501195405-3604aabfdc29/go.mod h1:TmP70nKfgs35046GoB8TIq1r1OFvEHYaaEvaPs6PayM=
-github.com/grupokindynos/common v0.0.0-20200505162244-6319c84e5fca h1:9v1rHqFyfmjqTvqHEYV640lOwrwo+pE9EPUE4IjgkfA=
-github.com/grupokindynos/common v0.0.0-20200505162244-6319c84e5fca/go.mod h1:TmP70nKfgs35046GoB8TIq1r1OFvEHYaaEvaPs6PayM=
+github.com/grupokindynos/common v0.0.0-20200604170804-ddf10d1f225f h1:17qgURPM2H1Qh3Jsm4qRMw2nrRl4WThh2nbU6htDE64=
+github.com/grupokindynos/common v0.0.0-20200604170804-ddf10d1f225f/go.mod h1:lCXEoFdFmLhbC6bGfhkByFYv6ndS+j+qr+SUBZ4ryx0=
 github.com/grupokindynos/go-binance v0.0.0-20200430034119-30d9d0485f22/go.mod h1:RgYTB+ZsGwA2qfu4o9ObHcsGijn3F04BdV5Nv0mmMqI=
 github.com/hashicorp/consul/api v1.3.0/go.mod h1:MmDNSzIMUjNpY/mQ398R4bk2FnqQLoPndWW5VkKPlCE=
 github.com/hashicorp/consul/sdk v0.3.0/go.mod h1:VKf9jXwCTEY1QZP2MOLRhb5i/I/ssyNV1vwHyQBF0x8=
@@ -472,6 +472,8 @@ github.com/sethvargo/go-password v0.1.2/go.mod h1:qKHfdSjT26DpHQWHWWR5+X4BI45jT3
 github.com/shirou/gopsutil v0.0.0-20180427012116-c95755e4bcd7/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4/go.mod h1:qsXQc7+bwAM3Q1u/4XEfrquwF8Lw7D7y5cD8CuHnfIc=
 github.com/shopspring/decimal v0.0.0-20200427060321-c939845a686f/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
+github.com/shopspring/decimal v1.2.0 h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=
+github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=

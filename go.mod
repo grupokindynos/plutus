@@ -8,7 +8,7 @@ require (
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.5.0
 	github.com/grupokindynos/adrestia-go v0.0.0-20200501223051-2597c8b41e89
-	github.com/grupokindynos/common v0.0.0-20200505162244-6319c84e5fca
+	github.com/grupokindynos/common v0.0.0-20200604170804-ddf10d1f225f
 	github.com/heroku/x v0.0.20
 	github.com/joho/godotenv v1.3.0
 	github.com/martinboehm/btcd v0.0.0-20190104121910-8e7c0427fee5
