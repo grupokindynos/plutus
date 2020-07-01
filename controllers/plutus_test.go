@@ -221,3 +221,15 @@ func ReverseTransferPayload(b []byte) ([]byte, *big.Int) {
 	amount.SetBytes(hexed)
 	return to, amount
 }
+
+func TestEthGas(t *testing.T) {
+	var gasStation GasStation
+	err := getJSON("https://www.etherchain.org/api/gasPriceOracle", &gasStation)
+	if err != nil {
+		t.Error("Could not get gas price")
+	}
+	averagePrice, _ := strconv.ParseFloat(gasStation.Standard, 64)
+	gasPrice := big.NewInt(int64(1000000000 * averagePrice)) //(10^9*(gweiValue))
+	fmt.Println(gasStation.Standard)
+	fmt.Println(gasPrice)
+}
