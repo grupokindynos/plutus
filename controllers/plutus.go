@@ -57,14 +57,10 @@ type Controller struct {
 }
 
 type GasStation struct {
-	Fast        float64 `json:"fast"`
-	Fastest     float64 `json:"fastest"`
-	SafeLow     float64 `json:"safeLow"`
-	Average     float64 `json:"average"`
-	SafeLowWait float64 `json:"safeLowWait"`
-	AvgWait     float64 `json:"avgWait"`
-	FastWait    float64 `json:"fastWait"`
-	FastestWait float64 `json:"fastestWait"`
+	Fast     string `json:"fast"`
+	SafeLow  string `json:"safeLow"`
+	Standard string `json:"standard"`
+	Fastest  string `json:"fastest"`
 }
 
 func (c *Controller) GetBalance(params Params) (interface{}, error) {
@@ -443,12 +439,13 @@ func (c *Controller) sendToAddressEth(SendToAddressData plutus.SendAddressBodyRe
 	if coinConfig.Info.Tag != "ETH" {
 		gasLimit = uint64(200000)
 	}
-	gasStation := GasStation{}
-	err = getJSON("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
+	var gasStation GasStation
+	err = getJSON("https://www.etherchain.org/api/gasPriceOracle", &gasStation)
 	if err != nil {
 		return "", errors.New("could not retrieve the gas price")
 	}
-	gasPrice := big.NewInt(int64(1000000000 * (gasStation.Average / 10))) //(10^9*(gweiValue/10))
+	averagePrice, _ := strconv.ParseFloat(gasStation.Standard, 64)
+	gasPrice := big.NewInt(int64(1000000000 * averagePrice)) //(10^9*(gweiValue))
 	var data []byte
 	var tx *types.Transaction
 

@@ -425,11 +425,12 @@ func (c *ControllerV2) sendToAddressEthV2(SendToAddressData plutus.SendAddressBo
 		gasLimit = uint64(200000)
 	}
 	var gasStation GasStation
-	err = getJSON("https://ethgasstation.info/json/ethgasAPI.json", &gasStation)
+	err = getJSON("https://www.etherchain.org/api/gasPriceOracle", &gasStation)
 	if err != nil {
 		return "", errors.New("could not retrieve the gas price")
 	}
-	gasPrice := big.NewInt(int64(1000000000 * (gasStation.Average / 10))) //(10^9*(gweiValue/10))
+	averagePrice, _ := strconv.ParseFloat(gasStation.Standard, 64)
+	gasPrice := big.NewInt(int64(1000000000 * averagePrice)) //(10^9*(gweiValue))
 	var data []byte
 	var tx *types.Transaction
 
